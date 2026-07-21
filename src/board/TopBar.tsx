@@ -84,7 +84,7 @@ export function TopBar({ store }: { store: BoardStore }) {
           className="text-sm font-bold tracking-tight text-neutral-900 hover:text-blue-600"
           title="All boards"
         >
-          oidadraw
+          kritzlboard
         </Link>
         <div className="h-5 w-px bg-border" />
         <input

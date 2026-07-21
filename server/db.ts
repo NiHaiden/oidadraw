@@ -4,7 +4,7 @@ import * as schema from "./schema.ts"
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
-  "postgres://oidadraw:oidadraw@localhost:5432/oidadraw"
+  "postgres://kritzlboard:kritzlboard@localhost:5432/kritzlboard"
 
 export const pool = new pg.Pool({ connectionString: DATABASE_URL })
 export const db = drizzle(pool, { schema })

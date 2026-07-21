@@ -25,7 +25,7 @@ import type { BoardStore } from "./store"
 import type { Box, HandleId, Point } from "./geometry"
 import type { Camera, Shape, StyleDefaults, TextShape, ToolId } from "./types"
 
-const STYLE_KEY = "oidadraw:style"
+const STYLE_KEY = "kritzlboard:style"
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 8
 

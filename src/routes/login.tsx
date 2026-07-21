@@ -41,7 +41,7 @@ function LoginPage() {
   return (
     <main className="mx-auto flex min-h-svh max-w-sm flex-col justify-center px-6 py-16">
       <Link to="/" className="text-2xl font-bold tracking-tight">
-        oidadraw
+        kritzlboard
       </Link>
       <h1 className="mt-8 text-lg font-semibold">
         {mode === "signin" ? "Sign in" : "Create an account"}

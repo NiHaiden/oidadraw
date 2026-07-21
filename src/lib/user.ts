@@ -1,6 +1,22 @@
 import type { UserInfo } from "@/board/types"
 
-const USER_KEY = "oidadraw:user"
+const USER_KEY = "kritzlboard:user"
+
+// one-time migration of localStorage from before the oidadraw → kritzlboard
+// rename (covers the style key from Board.tsx too, which imports this module)
+try {
+  for (const key of ["user", "recents", "style"]) {
+    const legacy = localStorage.getItem(`oidadraw:${key}`)
+    if (legacy !== null) {
+      if (localStorage.getItem(`kritzlboard:${key}`) === null) {
+        localStorage.setItem(`kritzlboard:${key}`, legacy)
+      }
+      localStorage.removeItem(`oidadraw:${key}`)
+    }
+  }
+} catch {
+  // private mode etc. — nothing to migrate
+}
 
 const CURSOR_COLORS = [
   "#e03131",
@@ -85,7 +101,7 @@ export interface RecentBoard {
   at: number
 }
 
-const RECENTS_KEY = "oidadraw:recents"
+const RECENTS_KEY = "kritzlboard:recents"
 
 export function getRecentBoards(): Array<RecentBoard> {
   try {

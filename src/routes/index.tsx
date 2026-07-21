@@ -110,7 +110,7 @@ function Home() {
         <AccountCorner />
       </div>
       <header className="mb-12">
-        <h1 className="text-3xl font-bold tracking-tight">oidadraw</h1>
+        <h1 className="text-3xl font-bold tracking-tight">kritzlboard</h1>
         <p className="mt-2 text-neutral-500">
           A collaborative whiteboard you can host yourself. Create a board and
           share the link — everyone on it draws together in real time.

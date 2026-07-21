@@ -1,5 +1,5 @@
 {
-  "name": "oidadraw-server",
+  "name": "kritzlboard-server",
   "private": true,
   "type": "module",
   "dependencies": {

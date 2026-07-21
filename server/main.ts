@@ -1,5 +1,5 @@
 /**
- * oidadraw sync server.
+ * kritzlboard sync server.
  *
  * One process that:
  *  - speaks the y-websocket protocol on ws://…/sync/<boardId> (compatible
@@ -11,7 +11,7 @@
  * Runs directly with Node >= 23 (type stripping): `node server/main.ts`
  *
  * Env: PORT (default 8080), HOST (default "::" = dual-stack),
- *      DATABASE_URL (default postgres://oidadraw:oidadraw@localhost:5432/oidadraw),
+ *      DATABASE_URL (default postgres://kritzlboard:kritzlboard@localhost:5432/kritzlboard),
  *      BETTER_AUTH_SECRET (set to a long random string in production),
  *      REQUIRE_AUTH (=1 to only allow signed-in users on boards),
  *      DATA_DIR (legacy .yjs board files, imported into Postgres on first open)
@@ -582,7 +582,7 @@ await migrate(db, {
 })
 
 function onListening(host: string) {
-  console.log(`oidadraw server listening on http://${host}:${PORT}`)
+  console.log(`kritzlboard server listening on http://${host}:${PORT}`)
   console.log(`  sync endpoint: ws://${host}:${PORT}/sync/<boardId>`)
   console.log(
     `  auth:          /api/auth/* (boards ${REQUIRE_AUTH ? "require sign-in" : "open to everyone"})`

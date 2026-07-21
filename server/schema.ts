@@ -1,5 +1,5 @@
 /**
- * Drizzle schema for everything oidadraw stores in Postgres:
+ * Drizzle schema for everything kritzlboard stores in Postgres:
  * BetterAuth tables (generated, see auth-schema.ts) and board documents.
  */
 import {

@@ -1,4 +1,4 @@
-# oidadraw
+# kritzlboard
 
 A collaborative whiteboard you can host yourself — a lightweight, self-hostable
 alternative to tldraw. Create a board, share the link, and everyone on your
@@ -33,8 +33,8 @@ network draws together in real time.
 ```bash
 pnpm install
 # a Postgres to develop against (or point DATABASE_URL at your own)
-podman run -d --name oidadraw-pg -p 5432:5432 \
-  -e POSTGRES_USER=oidadraw -e POSTGRES_PASSWORD=oidadraw -e POSTGRES_DB=oidadraw \
+podman run -d --name kritzlboard-pg -p 5432:5432 \
+  -e POSTGRES_USER=kritzlboard -e POSTGRES_PASSWORD=kritzlboard -e POSTGRES_DB=kritzlboard \
   docker.io/library/postgres:17-alpine
 pnpm dev
 ```
@@ -52,7 +52,7 @@ docker compose up -d        # or: podman compose up -d
 ```
 
 Then open `http://<your-host>:8080`. This starts the app plus a Postgres
-container; data lives in the `oidadraw-pgdata` volume. **Set
+container; data lives in the `kritzlboard-pgdata` volume. **Set
 `BETTER_AUTH_SECRET` in `docker-compose.yml` to your own random string**
 (e.g. `openssl rand -base64 32`).
 
@@ -73,7 +73,7 @@ DATABASE_URL=postgres://… BETTER_AUTH_SECRET=… pnpm start
 | -------------------- | --------- | ------------------------------------------------------------- |
 | `PORT`               | `8080`    | HTTP + websocket port                                         |
 | `HOST`               | `::`      | Listen address (dual-stack; falls back to `0.0.0.0` if IPv6 is unavailable) |
-| `DATABASE_URL`       | `postgres://oidadraw:oidadraw@localhost:5432/oidadraw` | Postgres connection string (boards + accounts) |
+| `DATABASE_URL`       | `postgres://kritzlboard:kritzlboard@localhost:5432/kritzlboard` | Postgres connection string (boards + accounts) |
 | `BETTER_AUTH_SECRET` | _(unset)_ | Secret for signing auth cookies — set to a long random string in production |
 | `REQUIRE_AUTH`       | `0`       | Set to `1` to require sign-in for all boards (websocket rejects anonymous clients, the app redirects to `/login`) |
 | `TRUSTED_ORIGINS`    | _(unset)_ | Extra comma-separated origins allowed for auth requests (when serving behind additional hostnames) |

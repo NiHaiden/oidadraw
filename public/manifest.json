@@ -1,6 +1,6 @@
 {
-  "short_name": "oidadraw",
-  "name": "oidadraw — collaborative whiteboard",
+  "short_name": "kritzlboard",
+  "name": "kritzlboard — collaborative whiteboard",
   "icons": [
     {
       "src": "favicon.ico",
