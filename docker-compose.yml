@@ -1,0 +1,37 @@
+services:
+  oidadraw:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://oidadraw:oidadraw@db:5432/oidadraw
+      # change this to a long random string (e.g. `openssl rand -base64 32`)
+      BETTER_AUTH_SECRET: change-me-to-a-long-random-string
+      # set to "1" to allow only signed-in users on boards
+      REQUIRE_AUTH: "0"
+    volumes:
+      # legacy file-based boards; imported into Postgres when first opened
+      - oidadraw-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: oidadraw
+      POSTGRES_PASSWORD: oidadraw
+      POSTGRES_DB: oidadraw
+    volumes:
+      - oidadraw-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oidadraw"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  oidadraw-data:
+  oidadraw-pgdata:

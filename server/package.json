@@ -1,0 +1,14 @@
+{
+  "name": "oidadraw-server",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "better-auth": "^1.6.23",
+    "drizzle-orm": "^0.45.2",
+    "lib0": "^0.2.99",
+    "pg": "^8.22.0",
+    "ws": "^8.18.0",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.20"
+  }
+}
