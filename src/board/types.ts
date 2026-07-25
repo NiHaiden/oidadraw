@@ -11,6 +11,7 @@ export type ColorId =
 
 export type FillStyle = "none" | "semi" | "solid"
 export type SizeId = "s" | "m" | "l"
+export type FontId = "sans" | "hand"
 
 export interface PaletteEntry {
   stroke: string
@@ -38,6 +39,23 @@ export const PEN_SIZES: Record<SizeId, number> = { s: 4, m: 8, l: 14 }
 /** Text font size per size. */
 export const FONT_SIZES: Record<SizeId, number> = { s: 18, m: 28, l: 44 }
 
+/** CSS for each font, spread into the style of anything rendering shape text. */
+export const FONT_STYLES: Record<
+  FontId,
+  { fontFamily: string; fontWeight: number }
+> = {
+  sans: { fontFamily: "var(--font-sans)", fontWeight: 400 },
+  // Caveat's regular weight reads too thin next to Inter
+  hand: { fontFamily: "var(--font-hand)", fontWeight: 600 },
+}
+
+export const DEFAULT_FONT: FontId = "sans"
+
+/** Font of a shape, defaulting for shapes saved before fonts existed. */
+export function shapeFont(shape: Shape): FontId {
+  return ("font" in shape ? shape.font : undefined) ?? DEFAULT_FONT
+}
+
 interface BaseShape {
   id: string
   /** paint order; higher paints on top */
@@ -55,6 +73,8 @@ export interface RectShape extends BaseShape {
   fill: FillStyle
   /** label text, centered inside the shape (absent on older boards) */
   text?: string
+  /** label typeface (absent on older boards) */
+  font?: FontId
 }
 
 export interface EllipseShape extends BaseShape {
@@ -66,6 +86,8 @@ export interface EllipseShape extends BaseShape {
   fill: FillStyle
   /** label text, centered inside the shape (absent on older boards) */
   text?: string
+  /** label typeface (absent on older boards) */
+  font?: FontId
 }
 
 /** Line/arrow from (x, y) to (x + dx, y + dy). dx/dy may be negative. */
@@ -77,6 +99,8 @@ export interface LineShape extends BaseShape {
   dy: number
   /** label text, centered on the line's midpoint (absent on older boards) */
   text?: string
+  /** label typeface (absent on older boards) */
+  font?: FontId
 }
 
 /** Freehand stroke. Points are [x0, y0, x1, y1, ...] relative to (x, y), spanning [0..w] x [0..h]. */
@@ -97,6 +121,8 @@ export interface TextShape extends BaseShape {
   h: number
   text: string
   fontSize: number
+  /** typeface (absent on older boards) */
+  font?: FontId
 }
 
 export type Shape = RectShape | EllipseShape | LineShape | DrawShape | TextShape
@@ -123,6 +149,7 @@ export interface StyleDefaults {
   color: ColorId
   fill: FillStyle
   size: SizeId
+  font: FontId
 }
 
 export interface Camera {

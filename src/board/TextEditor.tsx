@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { worldToScreen } from "./geometry"
-import { FONT_SIZES, PALETTE } from "./types"
+import { FONT_SIZES, FONT_STYLES, PALETTE, shapeFont } from "./types"
 import type { BoardStore } from "./store"
 import type { Camera, TextEditableShape } from "./types"
 
@@ -88,6 +88,7 @@ export function TextEditor({
   const fontSize =
     shape.type === "text" ? shape.fontSize : FONT_SIZES[shape.size]
   const color = PALETTE[shape.color].stroke
+  const fontStyle = FONT_STYLES[shapeFont(shape)]
 
   const editorProps = {
     ref,
@@ -125,6 +126,7 @@ export function TextEditor({
             color,
             minWidth: 8,
             caretColor: color,
+            ...fontStyle,
           }}
         />
       </div>
@@ -154,6 +156,7 @@ export function TextEditor({
             padding: `0 ${8 * camera.z}px`,
             boxSizing: "border-box",
             textAlign: "center",
+            ...fontStyle,
           }}
         />
       </div>
@@ -179,6 +182,7 @@ export function TextEditor({
         width: "max-content",
         minWidth: 8,
         textAlign: "center",
+        ...fontStyle,
       }}
     />
   )

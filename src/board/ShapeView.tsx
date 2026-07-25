@@ -1,7 +1,14 @@
 import { memo } from "react"
 import { getStroke } from "perfect-freehand"
-import { FONT_SIZES, PALETTE, PEN_SIZES, STROKE_WIDTHS } from "./types"
-import type { DrawShape, LineShape, Shape } from "./types"
+import {
+  FONT_SIZES,
+  FONT_STYLES,
+  PALETTE,
+  PEN_SIZES,
+  STROKE_WIDTHS,
+  shapeFont,
+} from "./types"
+import type { DrawShape, FontId, LineShape, Shape } from "./types"
 
 export function getSvgPathFromStroke(points: Array<Array<number>>): string {
   if (points.length === 0) return ""
@@ -56,6 +63,7 @@ function BoxLabel({
   h,
   text,
   fontSize,
+  font,
   color,
 }: {
   x: number
@@ -64,11 +72,15 @@ function BoxLabel({
   h: number
   text: string
   fontSize: number
+  font: FontId
   color: string
 }) {
   return (
     <foreignObject x={x} y={y} width={w} height={h} pointerEvents="none">
-      <div className="shape-label" style={{ fontSize, color }}>
+      <div
+        className="shape-label"
+        style={{ fontSize, color, ...FONT_STYLES[font] }}
+      >
         {text}
       </div>
     </foreignObject>
@@ -98,7 +110,7 @@ function LineLabel({
       fill={color}
       fontSize={fontSize}
       pointerEvents="none"
-      style={{ fontFamily: "var(--font-sans)", whiteSpace: "pre" }}
+      style={{ ...FONT_STYLES[shapeFont(shape)], whiteSpace: "pre" }}
     >
       {lines.map((line, i) => (
         <tspan key={i} x={midX} dy={i === 0 ? 0 : lineHeight}>
@@ -122,6 +134,7 @@ export const ShapeView = memo(function ShapeView({
   const palette = PALETTE[shape.color]
   const strokeWidth = STROKE_WIDTHS[shape.size]
   const labelFontSize = FONT_SIZES[shape.size]
+  const font = shapeFont(shape)
   const opacity = fadeOut ? 0.4 : 1
 
   switch (shape.type) {
@@ -148,6 +161,7 @@ export const ShapeView = memo(function ShapeView({
               h={shape.h}
               text={shape.text}
               fontSize={labelFontSize}
+              font={font}
               color={palette.stroke}
             />
           )}
@@ -175,6 +189,7 @@ export const ShapeView = memo(function ShapeView({
               h={shape.h}
               text={shape.text}
               fontSize={labelFontSize}
+              font={font}
               color={palette.stroke}
             />
           )}
@@ -264,6 +279,7 @@ export const ShapeView = memo(function ShapeView({
               style={{
                 fontSize: shape.fontSize,
                 color: PALETTE[shape.color].stroke,
+                ...FONT_STYLES[font],
               }}
             >
               {shape.text}

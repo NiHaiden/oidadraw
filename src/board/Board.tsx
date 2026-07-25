@@ -9,7 +9,8 @@ import { Toolbar } from "./Toolbar"
 import { StylePanel } from "./StylePanel"
 import { TopBar } from "./TopBar"
 import { ZoomBar } from "./ZoomBar"
-import { FONT_SIZES, isTextEditable } from "./types"
+import { DEFAULT_FONT, FONT_SIZES, isTextEditable } from "./types"
+import { measureTextBox } from "./measureText"
 import {
   boxFromPoints,
   boxesIntersect,
@@ -29,15 +30,21 @@ const STYLE_KEY = "kritzlboard:style"
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 8
 
+const DEFAULT_STYLE: StyleDefaults = {
+  color: "black",
+  fill: "none",
+  size: "m",
+  font: DEFAULT_FONT,
+}
+
 function loadStyleDefaults(): StyleDefaults {
   try {
     const raw = localStorage.getItem(STYLE_KEY)
-    if (raw)
-      return { color: "black", fill: "none", size: "m", ...JSON.parse(raw) }
+    if (raw) return { ...DEFAULT_STYLE, ...JSON.parse(raw) }
   } catch {
     // use defaults
   }
-  return { color: "black", fill: "none", size: "m" }
+  return DEFAULT_STYLE
 }
 
 type Session =
@@ -377,6 +384,7 @@ export function Board({ store }: { store: BoardStore }) {
         h: fontSize * 1.35,
         text: "",
         fontSize,
+        font: style.font,
       }
       store.undoManager.stopCapturing()
       store.putShape(shape)
@@ -520,6 +528,7 @@ export function Board({ store }: { store: BoardStore }) {
           color: style.color,
           size: style.size,
           fill: style.fill,
+          font: style.font,
           x: world.x,
           y: world.y,
           w: 1,
@@ -542,6 +551,7 @@ export function Board({ store }: { store: BoardStore }) {
           order: store.nextOrder(),
           color: style.color,
           size: style.size,
+          font: style.font,
           x: world.x,
           y: world.y,
           dx: 0,
@@ -851,6 +861,17 @@ export function Board({ store }: { store: BoardStore }) {
         }
         if (patch.fill && (next.type === "rect" || next.type === "ellipse")) {
           next.fill = patch.fill
+        }
+        if (patch.font && isTextEditable(next)) {
+          next = { ...next, font: patch.font }
+          // the stored box drives wrapping, and the two fonts differ enough in
+          // metrics that keeping it would reflow the text
+          if (next.type === "text") {
+            next = {
+              ...next,
+              ...measureTextBox(next.text, next.fontSize, patch.font),
+            }
+          }
         }
         return next
       })
