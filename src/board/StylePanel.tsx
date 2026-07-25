@@ -1,6 +1,13 @@
-import { COLOR_IDS, PALETTE } from "./types"
+import { COLOR_IDS, FONT_STYLES, PALETTE, isTextEditable } from "./types"
 import { cn } from "@/lib/utils"
-import type { FillStyle, Shape, SizeId, StyleDefaults, ToolId } from "./types"
+import type {
+  FillStyle,
+  FontId,
+  Shape,
+  SizeId,
+  StyleDefaults,
+  ToolId,
+} from "./types"
 
 const SHAPE_TOOLS: Array<ToolId> = [
   "draw",
@@ -15,6 +22,11 @@ const FILLS: Array<{ id: FillStyle; label: string }> = [
   { id: "none", label: "None" },
   { id: "semi", label: "Semi" },
   { id: "solid", label: "Solid" },
+]
+
+const FONTS: Array<{ id: FontId; label: string }> = [
+  { id: "sans", label: "Normal" },
+  { id: "hand", label: "Handwritten" },
 ]
 
 const SIZES: Array<{ id: SizeId; label: string; dot: number }> = [
@@ -41,6 +53,11 @@ export function StylePanel({
     tool === "rect" ||
     tool === "ellipse" ||
     selectedShapes.some((s) => s.type === "rect" || s.type === "ellipse")
+
+  // every shape but a freehand stroke can carry text
+  const showFont =
+    (SHAPE_TOOLS.includes(tool) && tool !== "draw") ||
+    selectedShapes.some(isTextEditable)
 
   return (
     <div className="absolute top-16 right-3 flex w-40 flex-col gap-3 rounded-xl border border-border bg-white p-3 shadow-lg">
@@ -115,6 +132,32 @@ export function StylePanel({
           ))}
         </div>
       </div>
+
+      {showFont && (
+        <div>
+          <div className="mb-1.5 text-[11px] font-medium text-neutral-500">
+            Font
+          </div>
+          <div className="flex gap-1">
+            {FONTS.map(({ id, label }) => (
+              <button
+                key={id}
+                title={label}
+                className={cn(
+                  "flex h-9 flex-1 items-center justify-center rounded-md border text-lg leading-none",
+                  style.font === id
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-border text-neutral-600 hover:bg-neutral-50"
+                )}
+                style={FONT_STYLES[id]}
+                onClick={() => onChange({ font: id })}
+              >
+                Aa
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
