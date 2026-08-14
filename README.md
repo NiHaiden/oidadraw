@@ -32,10 +32,7 @@ network draws together in real time.
 
 ```bash
 pnpm install
-# a Postgres to develop against (or point DATABASE_URL at your own)
-podman run -d --name kritzlboard-pg -p 5432:5432 \
-  -e POSTGRES_USER=kritzlboard -e POSTGRES_PASSWORD=kritzlboard -e POSTGRES_DB=kritzlboard \
-  docker.io/library/postgres:17-alpine
+pnpm db:up   # Postgres via docker-compose.dev.yml (or point DATABASE_URL at your own)
 pnpm dev
 ```
 

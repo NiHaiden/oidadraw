@@ -1,0 +1,25 @@
+# Local development: Postgres for `pnpm dev` (the app itself runs on the host).
+#   pnpm db:up    # start Postgres (data kept in the named volume)
+#   pnpm dev      # vite :3000 + sync server :8080
+#   pnpm db:down  # stop (data is kept)
+# Port 5432 + credentials match the default DATABASE_URL in server/db.ts,
+# so no env vars are needed for the dev server.
+services:
+  db:
+    image: postgres:18-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: kritzlboard
+      POSTGRES_PASSWORD: kritzlboard
+      POSTGRES_DB: kritzlboard
+    volumes:
+      - kritzlboard-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kritzlboard"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  kritzlboard-pgdata:

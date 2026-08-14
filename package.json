@@ -2,10 +2,16 @@
   "name": "kritzlboard",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=23.6"
+  },
   "scripts": {
     "dev": "concurrently -n web,sync -c auto \"vite dev --port 3000\" \"node --watch server/main.ts\"",
     "dev:web": "vite dev --port 3000",
     "dev:sync": "node --watch server/main.ts",
+    "db:up": "docker compose -f docker-compose.dev.yml up -d",
+    "db:down": "docker compose -f docker-compose.dev.yml down",
     "build": "vite build",
     "start": "node server/main.ts",
     "preview": "vite preview",
