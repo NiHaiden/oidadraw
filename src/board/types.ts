@@ -97,6 +97,10 @@ export interface LineShape extends BaseShape {
   y: number
   dx: number
   dy: number
+  /** id of a shape this end is latched onto; the endpoint is re-derived
+   * from the target's edge whenever either shape changes (absent = free) */
+  startBinding?: string
+  endBinding?: string
   /** label text, centered on the line's midpoint (absent on older boards) */
   text?: string
   /** label typeface (absent on older boards) */

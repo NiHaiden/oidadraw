@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
   boxFromPoints,
+  edgePoint,
+  layoutBoundLine,
+  updateBoundLines,
   boxesIntersect,
   getCommonBounds,
   getShapeBounds,
@@ -146,5 +149,48 @@ describe("snapAngle", () => {
 
   it("handles zero vectors", () => {
     expect(snapAngle(0, 0, Math.PI / 4)).toEqual({ x: 0, y: 0 })
+  })
+})
+
+describe("arrow binding", () => {
+  // rect: x 10..110, y 20..70, center (60, 45)
+  it("edgePoint exits a rect edge toward the target, plus gap", () => {
+    const p = edgePoint(rect, { x: 260, y: 45 }, 6)
+    expect(p).toEqual({ x: 116, y: 45 })
+  })
+
+  it("edgePoint exits an ellipse boundary", () => {
+    const ellipse = { ...rect, id: "e1", type: "ellipse" as const }
+    const p = edgePoint(ellipse, { x: 60, y: 245 }, 6)
+    expect(p.x).toBeCloseTo(60)
+    expect(p.y).toBeCloseTo(45 + 25 + 6)
+  })
+
+  it("layoutBoundLine pins the bound end to the target edge", () => {
+    const bound: LineShape = {
+      ...arrow,
+      x: 300,
+      y: 45,
+      dx: -100,
+      dy: 0,
+      endBinding: "r1",
+    }
+    const laid = layoutBoundLine(bound, (id) => (id === "r1" ? rect : undefined))
+    expect(laid.x).toBe(300)
+    expect(laid.x + laid.dx).toBe(116) // rect right edge + gap
+    expect(laid.y + laid.dy).toBe(45)
+  })
+
+  it("updateBoundLines re-lays arrows latched to a moved shape", () => {
+    const bound: LineShape = { ...arrow, x: 300, y: 45, dx: -100, dy: 0, endBinding: "r1" }
+    const movedRect = { ...rect, x: 110 } // moved 100 right, edge now at 210
+    const out = updateBoundLines([movedRect], [movedRect, bound])
+    const laid = out.find((s) => s.id === bound.id) as LineShape
+    expect(laid.x + laid.dx).toBe(216)
+  })
+
+  it("layoutBoundLine ignores dangling bindings", () => {
+    const bound: LineShape = { ...arrow, endBinding: "gone" }
+    expect(layoutBoundLine(bound, () => undefined)).toEqual(bound)
   })
 })

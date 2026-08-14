@@ -109,6 +109,10 @@ function LineLabel({
       dominantBaseline="central"
       fill={color}
       fontSize={fontSize}
+      stroke="var(--background)"
+      strokeWidth={fontSize / 4}
+      paintOrder="stroke"
+      strokeLinejoin="round"
       pointerEvents="none"
       style={{ ...FONT_STYLES[shapeFont(shape)], whiteSpace: "pre" }}
     >

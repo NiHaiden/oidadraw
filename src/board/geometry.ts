@@ -1,4 +1,4 @@
-import type { Camera, Shape } from "./types"
+import type { Camera, LineShape, Shape } from "./types"
 
 export interface Box {
   x: number
@@ -193,6 +193,102 @@ export function resizeBox(from: Box, handle: HandleId, p: Point): Box {
   if (handle.includes("s")) y2 = Math.max(p.y, y1 + 1)
 
   return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }
+}
+
+// --- arrow binding ---------------------------------------------------------
+
+/** Gap between a shape's edge and a latched arrow endpoint. */
+const BIND_GAP = 6
+
+export function isBindable(shape: Shape): boolean {
+  return shape.type === "rect" || shape.type === "ellipse"
+}
+
+/** Topmost bindable shape at (or within `margin` of) a point. */
+export function bindTargetAt(
+  point: Point,
+  shapes: Array<Shape>,
+  margin = 8
+): Shape | undefined {
+  for (let i = shapes.length - 1; i >= 0; i--) {
+    const s = shapes[i]
+    if (!isBindable(s)) continue
+    const b = getShapeBounds(s)
+    if (
+      point.x >= b.x - margin &&
+      point.x <= b.x + b.w + margin &&
+      point.y >= b.y - margin &&
+      point.y <= b.y + b.h + margin
+    ) {
+      return s
+    }
+  }
+  return undefined
+}
+
+/** Where a ray from the shape's center toward `toward` exits the shape, pushed out by `gap`. */
+export function edgePoint(shape: Shape, toward: Point, gap = BIND_GAP): Point {
+  const b = getShapeBounds(shape)
+  const cx = b.x + b.w / 2
+  const cy = b.y + b.h / 2
+  const dx = toward.x - cx
+  const dy = toward.y - cy
+  const len = Math.hypot(dx, dy)
+  if (len < 1e-6) return { x: cx, y: cy }
+  const t =
+    shape.type === "ellipse"
+      ? 1 /
+        Math.hypot(dx / Math.max(b.w / 2, 1e-6), dy / Math.max(b.h / 2, 1e-6))
+      : Math.min(
+          b.w / 2 / Math.max(Math.abs(dx), 1e-6),
+          b.h / 2 / Math.max(Math.abs(dy), 1e-6)
+        )
+  const k = t + gap / len
+  return { x: cx + dx * k, y: cy + dy * k }
+}
+
+function shapeCenter(shape: Shape): Point {
+  const b = getShapeBounds(shape)
+  return { x: b.x + b.w / 2, y: b.y + b.h / 2 }
+}
+
+/** Re-derive a line's endpoints from the shapes it is latched onto. */
+export function layoutBoundLine(
+  line: LineShape,
+  getShape: (id: string) => Shape | undefined
+): LineShape {
+  const start = line.startBinding ? getShape(line.startBinding) : undefined
+  const end = line.endBinding ? getShape(line.endBinding) : undefined
+  if (!start && !end) return line
+  let p1: Point = { x: line.x, y: line.y }
+  let p2: Point = { x: line.x + line.dx, y: line.y + line.dy }
+  const ref1 = start ? shapeCenter(start) : p1
+  const ref2 = end ? shapeCenter(end) : p2
+  if (start) p1 = edgePoint(start, ref2)
+  if (end) p2 = edgePoint(end, ref1)
+  return { ...line, x: p1.x, y: p1.y, dx: p2.x - p1.x, dy: p2.y - p1.y }
+}
+
+/** `changed` shapes plus every line latched to (or within) them, re-laid out. */
+export function updateBoundLines(
+  changed: Array<Shape>,
+  all: Array<Shape>
+): Array<Shape> {
+  const changedById = new Map(changed.map((s) => [s.id, s]))
+  const allById = new Map(all.map((s) => [s.id, s]))
+  const get = (id: string) => changedById.get(id) ?? allById.get(id)
+  const out = new Map(changedById)
+  for (const s of all) {
+    const cur = changedById.get(s.id) ?? s
+    if (cur.type !== "line" && cur.type !== "arrow") continue
+    if (!cur.startBinding && !cur.endBinding) continue
+    const affected =
+      changedById.has(cur.id) ||
+      (cur.startBinding != null && changedById.has(cur.startBinding)) ||
+      (cur.endBinding != null && changedById.has(cur.endBinding))
+    if (affected) out.set(cur.id, layoutBoundLine(cur, get))
+  }
+  return [...out.values()]
 }
 
 /** Snap an offset vector to the nearest multiple of `step` radians. */

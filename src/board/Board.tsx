@@ -12,15 +12,18 @@ import { ZoomBar } from "./ZoomBar"
 import { DEFAULT_FONT, FONT_SIZES, isTextEditable } from "./types"
 import { measureTextBox } from "./measureText"
 import {
+  bindTargetAt,
   boxFromPoints,
   boxesIntersect,
   getCommonBounds,
   getShapeBounds,
+  layoutBoundLine,
   resizeBox,
   resizeShape,
   screenToWorld,
   snapAngle,
   translateShape,
+  updateBoundLines,
 } from "./geometry"
 import type { BoardStore } from "./store"
 import type { Box, HandleId, Point } from "./geometry"
@@ -95,6 +98,8 @@ export function Board({ store }: { store: BoardStore }) {
   const [spaceDown, setSpaceDown] = useState(false)
   const [brushBox, setBrushBox] = useState<Box | null>(null)
   const [eraseSet, setEraseSet] = useState<ReadonlySet<string>>(() => new Set())
+  /** shape an arrow endpoint would latch onto right now (highlighted) */
+  const [snapTargetId, setSnapTargetId] = useState<string | null>(null)
 
   const selectedShapes = useMemo(
     () => shapes.filter((s) => selection.has(s.id)),
@@ -189,11 +194,25 @@ export function Board({ store }: { store: BoardStore }) {
     (source: Array<Shape>, offset = 16) => {
       if (source.length === 0) return
       let order = store.nextOrder()
-      const clones = source.map((s) => ({
-        ...translateShape(s, offset, offset),
-        id: nanoid(12),
-        order: order++,
-      }))
+      const idMap = new Map(source.map((s) => [s.id, nanoid(12)]))
+      const clones = source.map((s) => {
+        const clone = {
+          ...translateShape(s, offset, offset),
+          id: idMap.get(s.id)!,
+          order: order++,
+        }
+        if (clone.type === "line" || clone.type === "arrow") {
+          // bindings follow only if the target was copied too
+          for (const key of ["startBinding", "endBinding"] as const) {
+            const bound = clone[key]
+            if (!bound) continue
+            const mapped = idMap.get(bound)
+            if (mapped) clone[key] = mapped
+            else delete clone[key]
+          }
+        }
+        return clone
+      })
       store.undoManager.stopCapturing()
       store.putShapes(clones)
       setSelection(new Set(clones.map((s) => s.id)))
@@ -545,6 +564,7 @@ export function Board({ store }: { store: BoardStore }) {
 
       case "line":
       case "arrow": {
+        const startTarget = bindTargetAt(world, store.getShapes())
         const shape: Shape = {
           id: nanoid(12),
           type: tool,
@@ -556,7 +576,9 @@ export function Board({ store }: { store: BoardStore }) {
           y: world.y,
           dx: 0,
           dy: 0,
+          ...(startTarget ? { startBinding: startTarget.id } : {}),
         }
+        setSnapTargetId(startTarget?.id ?? null)
         store.putShape(shape)
         sessionRef.current = {
           kind: "line-new",
@@ -614,7 +636,21 @@ export function Board({ store }: { store: BoardStore }) {
           if (Math.abs(dx) > Math.abs(dy)) dy = 0
           else dx = 0
         }
-        store.putShapes(session.original.map((s) => translateShape(s, dx, dy)))
+        const movedIds = new Set(session.original.map((s) => s.id))
+        const moved = session.original.map((s) => {
+          const m = translateShape(s, dx, dy)
+          // dragging a latched line away from a stationary target detaches it
+          if (m.type === "line" || m.type === "arrow") {
+            if (m.startBinding && !movedIds.has(m.startBinding)) {
+              delete m.startBinding
+            }
+            if (m.endBinding && !movedIds.has(m.endBinding)) {
+              delete m.endBinding
+            }
+          }
+          return m
+        })
+        store.putShapes(updateBoundLines(moved, store.getShapes()))
         return
       }
 
@@ -639,7 +675,10 @@ export function Board({ store }: { store: BoardStore }) {
           }
         }
         store.putShapes(
-          session.original.map((s) => resizeShape(s, session.from, to))
+          updateBoundLines(
+            session.original.map((s) => resizeShape(s, session.from, to)),
+            store.getShapes()
+          )
         )
         return
       }
@@ -647,19 +686,34 @@ export function Board({ store }: { store: BoardStore }) {
       case "line-end": {
         const orig = session.original
         if (orig.type !== "line" && orig.type !== "arrow") return
+        const next = { ...orig }
         if (session.which === "end") {
           let dx = world.x - orig.x
           let dy = world.y - orig.y
           if (e.shiftKey) ({ x: dx, y: dy } = snapAngle(dx, dy, Math.PI / 12))
-          store.putShape({ ...orig, dx, dy })
+          next.dx = dx
+          next.dy = dy
         } else {
           const endX = orig.x + orig.dx
           const endY = orig.y + orig.dy
           let dx = endX - world.x
           let dy = endY - world.y
           if (e.shiftKey) ({ x: dx, y: dy } = snapAngle(dx, dy, Math.PI / 12))
-          store.putShape({ ...orig, x: endX - dx, y: endY - dy, dx, dy })
+          next.x = endX - dx
+          next.y = endY - dy
+          next.dx = dx
+          next.dy = dy
         }
+        // latch the dragged end; never both ends onto the same shape
+        const other =
+          session.which === "end" ? next.startBinding : next.endBinding
+        const target = bindTargetAt(world, store.getShapes())
+        const targetId = target && target.id !== other ? target.id : undefined
+        const key = session.which === "end" ? "endBinding" : "startBinding"
+        delete next[key]
+        if (targetId) next[key] = targetId
+        setSnapTargetId(targetId ?? null)
+        store.putShape(layoutBoundLine(next, (id) => store.getShape(id)))
         return
       }
 
@@ -737,7 +791,21 @@ export function Board({ store }: { store: BoardStore }) {
         let dx = world.x - session.startWorld.x
         let dy = world.y - session.startWorld.y
         if (e.shiftKey) ({ x: dx, y: dy } = snapAngle(dx, dy, Math.PI / 4))
-        store.putShape({ ...shape, dx, dy })
+        const target = bindTargetAt(world, store.getShapes())
+        const targetId =
+          target && target.id !== shape.startBinding ? target.id : undefined
+        // rebuild from the pristine anchor; layout then clips bound ends
+        const next = {
+          ...shape,
+          x: session.startWorld.x,
+          y: session.startWorld.y,
+          dx,
+          dy,
+        }
+        delete next.endBinding
+        if (targetId) next.endBinding = targetId
+        setSnapTargetId(targetId ?? null)
+        store.putShape(layoutBoundLine(next, (id) => store.getShape(id)))
         return
       }
 
@@ -757,6 +825,7 @@ export function Board({ store }: { store: BoardStore }) {
   const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
     const session = sessionRef.current
     sessionRef.current = null
+    setSnapTargetId(null)
     if (svgRef.current?.hasPointerCapture(e.pointerId)) {
       svgRef.current.releasePointerCapture(e.pointerId)
     }
@@ -788,7 +857,9 @@ export function Board({ store }: { store: BoardStore }) {
         const shape = store.getShape(session.id)
         if (shape && (shape.type === "line" || shape.type === "arrow")) {
           if (Math.hypot(shape.dx, shape.dy) < 4) {
-            store.putShape({ ...shape, dx: 120, dy: 0 })
+            const next = { ...shape, dx: 120, dy: 0 }
+            delete next.endBinding
+            store.putShape(layoutBoundLine(next, (id) => store.getShape(id)))
           }
           setSelection(new Set([session.id]))
         }
@@ -933,6 +1004,27 @@ export function Board({ store }: { store: BoardStore }) {
               />
             )
           )}
+          {snapTargetId &&
+            (() => {
+              const target = store.getShape(snapTargetId)
+              if (!target) return null
+              const b = getShapeBounds(target)
+              const pad = 3 / camera.z
+              return (
+                <rect
+                  x={b.x - pad}
+                  y={b.y - pad}
+                  width={b.w + pad * 2}
+                  height={b.h + pad * 2}
+                  rx={6}
+                  fill="none"
+                  stroke="#3667e8"
+                  strokeWidth={1.5 / camera.z}
+                  strokeDasharray={`${4 / camera.z} ${4 / camera.z}`}
+                  pointerEvents="none"
+                />
+              )
+            })()}
           <SelectionOverlay
             store={store}
             shapes={shapes}
