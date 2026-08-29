@@ -9,7 +9,12 @@ import { Toolbar } from "./Toolbar"
 import { StylePanel } from "./StylePanel"
 import { TopBar } from "./TopBar"
 import { ZoomBar } from "./ZoomBar"
-import { DEFAULT_FONT, FONT_SIZES, isTextEditable } from "./types"
+import {
+  DEFAULT_FONT,
+  DEFAULT_TEXT_SIZE,
+  TEXT_FONT_SIZES,
+  isTextEditable,
+} from "./types"
 import { measureTextBox } from "./measureText"
 import {
   bindTargetAt,
@@ -36,8 +41,10 @@ const MAX_ZOOM = 8
 const DEFAULT_STYLE: StyleDefaults = {
   color: "black",
   fill: "none",
+  strokeStyle: "solid",
   size: "m",
   font: DEFAULT_FONT,
+  textSize: DEFAULT_TEXT_SIZE,
 }
 
 function loadStyleDefaults(): StyleDefaults {
@@ -94,6 +101,7 @@ export function Board({ store }: { store: BoardStore }) {
     () => new Set()
   )
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [textSelectedId, setTextSelectedId] = useState<string | null>(null)
   const [style, setStyle] = useState<StyleDefaults>(loadStyleDefaults)
   const [spaceDown, setSpaceDown] = useState(false)
   const [brushBox, setBrushBox] = useState<Box | null>(null)
@@ -126,6 +134,13 @@ export function Board({ store }: { store: BoardStore }) {
     const live = [...selection].filter((id) => store.getShape(id))
     if (live.length !== selection.size) setSelection(new Set(live))
   }, [shapes, selection, store])
+
+  // clear text selection when the shape is deleted
+  useEffect(() => {
+    if (textSelectedId != null && !store.getShape(textSelectedId)) {
+      setTextSelectedId(null)
+    }
+  }, [shapes, textSelectedId, store])
 
   // stop editing when the edited shape is deleted (e.g. by a peer)
   useEffect(() => {
@@ -390,7 +405,7 @@ export function Board({ store }: { store: BoardStore }) {
 
   const createTextShape = useCallback(
     (world: Point): TextShape => {
-      const fontSize = FONT_SIZES[style.size]
+      const fontSize = TEXT_FONT_SIZES[style.textSize]
       const shape: TextShape = {
         id: nanoid(12),
         type: "text",
@@ -458,8 +473,10 @@ export function Board({ store }: { store: BoardStore }) {
 
     switch (tool) {
       case "select": {
+        // clicking a resize handle clears text selection
         if (e.target instanceof Element) {
           const handleEl = e.target.closest("[data-resize-handle]")
+          if (handleEl) setTextSelectedId(null)
           if (handleEl && selectedShapes.length > 0) {
             const from = getCommonBounds(selectedShapes)!
             sessionRef.current = {
@@ -491,6 +508,7 @@ export function Board({ store }: { store: BoardStore }) {
             if (nextSelection.has(hitId)) {
               nextSelection.delete(hitId)
               setSelection(nextSelection)
+              setTextSelectedId(null)
               return
             }
             nextSelection.add(hitId)
@@ -500,6 +518,13 @@ export function Board({ store }: { store: BoardStore }) {
             nextSelection = new Set([hitId])
           }
           setSelection(nextSelection)
+          // text-focused selection: single text-editable shape
+          const shape = store.getShape(hitId)
+          if (shape && isTextEditable(shape) && !e.shiftKey) {
+            setTextSelectedId(hitId)
+          } else {
+            setTextSelectedId(null)
+          }
           sessionRef.current = {
             kind: "move",
             clickedId: hitId,
@@ -516,7 +541,10 @@ export function Board({ store }: { store: BoardStore }) {
           startWorld: world,
           baseSelection: e.shiftKey ? selection : new Set(),
         }
-        if (!e.shiftKey) setSelection(new Set())
+        if (!e.shiftKey) {
+          setSelection(new Set())
+          setTextSelectedId(null)
+        }
         return
       }
 
@@ -883,6 +911,7 @@ export function Board({ store }: { store: BoardStore }) {
   const onDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (tool !== "select") return
     sessionRef.current = null
+    setTextSelectedId(null)
     // hit-test by point: pointer capture on the svg retargets the dblclick
     // event itself to the svg, so e.target never points at the shape
     let hitId: string | null = null
@@ -917,10 +946,15 @@ export function Board({ store }: { store: BoardStore }) {
       selectedShapes.map((shape) => {
         let next: Shape = { ...shape }
         if (patch.color) next.color = patch.color
-        if (patch.size) {
-          next.size = patch.size
+        if (patch.size) next.size = patch.size
+        if (patch.fill && (next.type === "rect" || next.type === "ellipse")) {
+          next.fill = patch.fill
+        }
+        // text size is its own knob: a box's stroke width and its text size
+        // are chosen independently
+        if (patch.textSize) {
+          const fontSize = TEXT_FONT_SIZES[patch.textSize]
           if (next.type === "text") {
-            const fontSize = FONT_SIZES[patch.size]
             const factor = fontSize / next.fontSize
             next = {
               ...next,
@@ -928,10 +962,9 @@ export function Board({ store }: { store: BoardStore }) {
               w: next.w * factor,
               h: next.h * factor,
             }
+          } else if (next.type !== "draw") {
+            next = { ...next, textSize: patch.textSize }
           }
-        }
-        if (patch.fill && (next.type === "rect" || next.type === "ellipse")) {
-          next.fill = patch.fill
         }
         if (patch.font && isTextEditable(next)) {
           next = { ...next, font: patch.font }
@@ -943,6 +976,15 @@ export function Board({ store }: { store: BoardStore }) {
               ...measureTextBox(next.text, next.fontSize, patch.font),
             }
           }
+        }
+        if (
+          patch.strokeStyle &&
+          (next.type === "rect" ||
+            next.type === "ellipse" ||
+            next.type === "line" ||
+            next.type === "arrow")
+        ) {
+          next = { ...next, strokeStyle: patch.strokeStyle }
         }
         return next
       })
@@ -1032,6 +1074,7 @@ export function Board({ store }: { store: BoardStore }) {
             camera={camera}
             brushBox={brushBox}
             hideHandles={editingId != null}
+            textSelectedId={textSelectedId}
           />
         </g>
         <PeerCursors store={store} camera={camera} />

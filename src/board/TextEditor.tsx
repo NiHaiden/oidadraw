@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { worldToScreen } from "./geometry"
-import { FONT_SIZES, FONT_STYLES, PALETTE, shapeFont } from "./types"
+import { FONT_STYLES, PALETTE, shapeFont, shapeFontSize } from "./types"
 import type { BoardStore } from "./store"
 import type { Camera, TextEditableShape } from "./types"
 
@@ -85,8 +85,7 @@ export function TextEditor({
     onDone()
   }
 
-  const fontSize =
-    shape.type === "text" ? shape.fontSize : FONT_SIZES[shape.size]
+  const fontSize = shapeFontSize(shape)
   const color = PALETTE[shape.color].stroke
   const fontStyle = FONT_STYLES[shapeFont(shape)]
 
@@ -122,7 +121,7 @@ export function TextEditor({
         <div
           {...editorProps}
           style={{
-            fontSize: shape.fontSize,
+            fontSize,
             color,
             minWidth: 8,
             caretColor: color,

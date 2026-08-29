@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 import { nanoid } from "nanoid"
-import { Clock, LogOut, PenLine, Plus, Server, Users, X } from "lucide-react"
+import { Clock, LogOut, PenLine, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getRecentBoards, removeRecentBoard, setUserName } from "@/lib/user"
 import { fetchMyBoards, removeBoardOnServer } from "@/lib/boards"
@@ -72,26 +72,6 @@ function AccountCorner() {
   )
 }
 
-const FEATURES = [
-  {
-    icon: Users,
-    color: MARKERS[0],
-    title: "Together in real time",
-    text: "Live cursors and strokes from everyone on the board, as they happen.",
-  },
-  {
-    icon: PenLine,
-    color: MARKERS[2],
-    title: "Zero setup",
-    text: "One click and your board is live. No account needed to start drawing.",
-  },
-  {
-    icon: Server,
-    color: MARKERS[3],
-    title: "Yours to host",
-    text: "Run it on your own server and keep your sketches to yourself.",
-  },
-]
 
 function Home() {
   const { data: session, isPending } = useSession()
@@ -209,16 +189,6 @@ function Home() {
             </span>
           </div>
         </header>
-
-        <section className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, color, title, text }) => (
-            <div key={title}>
-              <Icon className="size-5" style={{ color }} />
-              <h2 className="mt-3 font-semibold">{title}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{text}</p>
-            </div>
-          ))}
-        </section>
 
         {recents.length > 0 && (
           <section className="mt-20">

@@ -10,7 +10,10 @@ export type ColorId =
   | "red"
 
 export type FillStyle = "none" | "semi" | "solid"
+export type StrokeStyle = "solid" | "dashed" | "dotted"
 export type SizeId = "s" | "m" | "l"
+/** Text size, finer-grained than the shape's own `size`. */
+export type TextSizeId = "s" | "m" | "l" | "xl"
 export type FontId = "sans" | "hand"
 
 export interface PaletteEntry {
@@ -38,6 +41,13 @@ export const STROKE_WIDTHS: Record<SizeId, number> = { s: 2, m: 3.5, l: 6 }
 export const PEN_SIZES: Record<SizeId, number> = { s: 4, m: 8, l: 14 }
 /** Text font size per size. */
 export const FONT_SIZES: Record<SizeId, number> = { s: 18, m: 28, l: 44 }
+/** Font size per text size; s/m/l match what shapes had before this existed. */
+export const TEXT_FONT_SIZES: Record<TextSizeId, number> = {
+  s: 18,
+  m: 28,
+  l: 44,
+  xl: 72,
+}
 
 /** CSS for each font, spread into the style of anything rendering shape text. */
 export const FONT_STYLES: Record<
@@ -50,10 +60,20 @@ export const FONT_STYLES: Record<
 }
 
 export const DEFAULT_FONT: FontId = "sans"
+export const DEFAULT_TEXT_SIZE: TextSizeId = "m"
 
 /** Font of a shape, defaulting for shapes saved before fonts existed. */
 export function shapeFont(shape: Shape): FontId {
   return ("font" in shape ? shape.font : undefined) ?? DEFAULT_FONT
+}
+
+/** Font size a shape's text renders at. */
+export function shapeFontSize(shape: Shape): number {
+  // an explicit choice wins; labels drawn before it existed follow the size
+  const chosen = "textSize" in shape ? shape.textSize : undefined
+  if (chosen) return TEXT_FONT_SIZES[chosen]
+  // standalone text boxes store their own font size, labels derive theirs
+  return shape.type === "text" ? shape.fontSize : FONT_SIZES[shape.size]
 }
 
 interface BaseShape {
@@ -71,10 +91,13 @@ export interface RectShape extends BaseShape {
   w: number
   h: number
   fill: FillStyle
+  strokeStyle?: StrokeStyle
   /** label text, centered inside the shape (absent on older boards) */
   text?: string
   /** label typeface (absent on older boards) */
   font?: FontId
+  /** label size, independent of the shape's `size` (absent = follow it) */
+  textSize?: TextSizeId
 }
 
 export interface EllipseShape extends BaseShape {
@@ -84,10 +107,13 @@ export interface EllipseShape extends BaseShape {
   w: number
   h: number
   fill: FillStyle
+  strokeStyle?: StrokeStyle
   /** label text, centered inside the shape (absent on older boards) */
   text?: string
   /** label typeface (absent on older boards) */
   font?: FontId
+  /** label size, independent of the shape's `size` (absent = follow it) */
+  textSize?: TextSizeId
 }
 
 /** Line/arrow from (x, y) to (x + dx, y + dy). dx/dy may be negative. */
@@ -97,6 +123,7 @@ export interface LineShape extends BaseShape {
   y: number
   dx: number
   dy: number
+  strokeStyle?: StrokeStyle
   /** id of a shape this end is latched onto; the endpoint is re-derived
    * from the target's edge whenever either shape changes (absent = free) */
   startBinding?: string
@@ -105,6 +132,8 @@ export interface LineShape extends BaseShape {
   text?: string
   /** label typeface (absent on older boards) */
   font?: FontId
+  /** label size, independent of the shape's `size` (absent = follow it) */
+  textSize?: TextSizeId
 }
 
 /** Freehand stroke. Points are [x0, y0, x1, y1, ...] relative to (x, y), spanning [0..w] x [0..h]. */
@@ -152,8 +181,10 @@ export type ToolId =
 export interface StyleDefaults {
   color: ColorId
   fill: FillStyle
+  strokeStyle: StrokeStyle
   size: SizeId
   font: FontId
+  textSize: TextSizeId
 }
 
 export interface Camera {

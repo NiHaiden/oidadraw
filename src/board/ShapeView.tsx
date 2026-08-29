@@ -1,12 +1,12 @@
 import { memo } from "react"
 import { getStroke } from "perfect-freehand"
 import {
-  FONT_SIZES,
   FONT_STYLES,
   PALETTE,
   PEN_SIZES,
   STROKE_WIDTHS,
   shapeFont,
+  shapeFontSize,
 } from "./types"
 import type { DrawShape, FontId, LineShape, Shape } from "./types"
 
@@ -137,9 +137,17 @@ export const ShapeView = memo(function ShapeView({
 }) {
   const palette = PALETTE[shape.color]
   const strokeWidth = STROKE_WIDTHS[shape.size]
-  const labelFontSize = FONT_SIZES[shape.size]
+  const labelFontSize = shapeFontSize(shape)
   const font = shapeFont(shape)
   const opacity = fadeOut ? 0.4 : 1
+  const strokeStyle =
+    ("strokeStyle" in shape ? shape.strokeStyle : undefined) ?? "solid"
+  const strokeDasharray =
+    strokeStyle === "dashed"
+      ? `${6 * strokeWidth} ${4 * strokeWidth}`
+      : strokeStyle === "dotted"
+        ? `${2 * strokeWidth} ${3 * strokeWidth}`
+        : undefined
 
   switch (shape.type) {
     case "rect": {
@@ -156,6 +164,7 @@ export const ShapeView = memo(function ShapeView({
             fillOpacity={shape.fill === "semi" ? 0.55 : 1}
             stroke={palette.stroke}
             strokeWidth={strokeWidth}
+            strokeDasharray={strokeDasharray}
           />
           {!hideLabel && shape.text && (
             <BoxLabel
@@ -184,6 +193,7 @@ export const ShapeView = memo(function ShapeView({
             fillOpacity={shape.fill === "semi" ? 0.55 : 1}
             stroke={palette.stroke}
             strokeWidth={strokeWidth}
+            strokeDasharray={strokeDasharray}
           />
           {!hideLabel && shape.text && (
             <BoxLabel
@@ -222,6 +232,7 @@ export const ShapeView = memo(function ShapeView({
             stroke={palette.stroke}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
+            strokeDasharray={strokeDasharray}
             pointerEvents="none"
           />
           {shape.type === "arrow" && (
@@ -232,6 +243,7 @@ export const ShapeView = memo(function ShapeView({
               strokeWidth={strokeWidth}
               strokeLinecap="round"
               strokeLinejoin="round"
+              strokeDasharray={strokeDasharray}
               pointerEvents="none"
             />
           )}
@@ -268,20 +280,20 @@ export const ShapeView = memo(function ShapeView({
             x={shape.x}
             y={shape.y}
             width={Math.max(shape.w, 8)}
-            height={Math.max(shape.h, shape.fontSize)}
+            height={Math.max(shape.h, labelFontSize)}
             fill="transparent"
           />
           <foreignObject
             x={shape.x}
             y={shape.y}
             width={Math.max(shape.w, 8) + 2}
-            height={Math.max(shape.h, shape.fontSize * 1.35) + 2}
+            height={Math.max(shape.h, labelFontSize * 1.35) + 2}
             pointerEvents="none"
           >
             <div
               className="shape-text-content"
               style={{
-                fontSize: shape.fontSize,
+                fontSize: labelFontSize,
                 color: PALETTE[shape.color].stroke,
                 ...FONT_STYLES[font],
               }}
