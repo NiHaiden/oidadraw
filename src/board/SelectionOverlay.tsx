@@ -6,7 +6,6 @@ import {
   getHandlePosition,
   getShapeBounds,
 } from "./geometry"
-import { shapeFontSize } from "./types"
 import type { BoardStore } from "./store"
 import type { Box } from "./geometry"
 import type { Camera, Shape } from "./types"
@@ -20,7 +19,6 @@ export function SelectionOverlay({
   camera,
   brushBox,
   hideHandles,
-  textSelectedId,
 }: {
   store: BoardStore
   shapes: Array<Shape>
@@ -28,7 +26,6 @@ export function SelectionOverlay({
   camera: Camera
   brushBox: Box | null
   hideHandles: boolean
-  textSelectedId: string | null
 }) {
   const peers = usePeers(store)
   const z = camera.z
@@ -90,115 +87,58 @@ export function SelectionOverlay({
       {/* selection bounds + resize handles */}
       {bounds && !singleLine && (
         <>
-          {textSelectedId === selectedShapes[0]?.id &&
-          selectedShapes.length === 1 ? (
-            // text-focused: dotted rectangle with small padding, no handles
-            <rect
-              x={bounds.x - 4 / z}
-              y={bounds.y - 4 / z}
-              width={bounds.w + 8 / z}
-              height={bounds.h + 8 / z}
-              fill="none"
-              stroke={SELECT_COLOR}
-              strokeWidth={thin}
-              strokeDasharray={`${4 / z} ${4 / z}`}
-              pointerEvents="none"
-            />
-          ) : (
-            <>
-              {selectedShapes.length > 1 &&
-                selectedShapes.map((shape) => {
-                  const b = getShapeBounds(shape)
-                  return (
-                    <rect
-                      key={shape.id}
-                      x={b.x}
-                      y={b.y}
-                      width={b.w}
-                      height={b.h}
-                      fill="none"
-                      stroke={SELECT_COLOR}
-                      strokeWidth={1 / z}
-                      opacity={0.5}
-                      pointerEvents="none"
-                    />
-                  )
-                })}
-              <rect
-                x={bounds.x}
-                y={bounds.y}
-                width={bounds.w}
-                height={bounds.h}
-                fill="none"
-                stroke={SELECT_COLOR}
-                strokeWidth={thin}
-                pointerEvents="none"
-              />
-              {!hideHandles &&
-                HANDLE_IDS.map((handle) => {
-                  const p = getHandlePosition(bounds, handle)
-                  return (
-                    <rect
-                      key={handle}
-                      data-resize-handle={handle}
-                      x={p.x - handleSize / 2}
-                      y={p.y - handleSize / 2}
-                      width={handleSize}
-                      height={handleSize}
-                      rx={2 / z}
-                      fill="white"
-                      stroke={SELECT_COLOR}
-                      strokeWidth={thin}
-                      style={{ cursor: HANDLE_CURSORS[handle] }}
-                    />
-                  )
-                })}
-            </>
-          )}
-        </>
-      )}
-
-      {/* line endpoints or text-focused rectangle */}
-      {singleLine &&
-        !hideHandles &&
-        (textSelectedId === singleLine.id ? (
-          // text-focused: dotted rectangle around midpoint
           <rect
-            x={singleLine.x + singleLine.dx / 2 - 40 / z}
-            y={
-              singleLine.y + singleLine.dy / 2 - shapeFontSize(singleLine) * 1.5
-            }
-            width={80 / z}
-            height={shapeFontSize(singleLine) * 3}
+            x={bounds.x}
+            y={bounds.y}
+            width={bounds.w}
+            height={bounds.h}
             fill="none"
             stroke={SELECT_COLOR}
             strokeWidth={thin}
-            strokeDasharray={`${4 / z} ${4 / z}`}
             pointerEvents="none"
           />
-        ) : (
-          (
-            [
-              ["start", singleLine.x, singleLine.y],
-              [
-                "end",
-                singleLine.x + singleLine.dx,
-                singleLine.y + singleLine.dy,
-              ],
-            ] as const
-          ).map(([which, cx, cy]) => (
-            <circle
-              key={which}
-              data-line-handle={which}
-              cx={cx}
-              cy={cy}
-              r={handleSize / 1.6}
-              fill="white"
-              stroke={SELECT_COLOR}
-              strokeWidth={thin}
-              style={{ cursor: "move" }}
-            />
-          ))
+          {!hideHandles &&
+            HANDLE_IDS.map((handle) => {
+              const p = getHandlePosition(bounds, handle)
+              return (
+                <rect
+                  key={handle}
+                  data-resize-handle={handle}
+                  x={p.x - handleSize / 2}
+                  y={p.y - handleSize / 2}
+                  width={handleSize}
+                  height={handleSize}
+                  rx={2 / z}
+                  fill="white"
+                  stroke={SELECT_COLOR}
+                  strokeWidth={thin}
+                  style={{ cursor: HANDLE_CURSORS[handle] }}
+                />
+              )
+            })}
+        </>
+      )}
+
+      {/* line endpoints stay available when a line is selected */}
+      {singleLine &&
+        !hideHandles &&
+        (
+          [
+            ["start", singleLine.x, singleLine.y],
+            ["end", singleLine.x + singleLine.dx, singleLine.y + singleLine.dy],
+          ] as const
+        ).map(([which, cx, cy]) => (
+          <circle
+            key={which}
+            data-line-handle={which}
+            cx={cx}
+            cy={cy}
+            r={handleSize / 1.6}
+            fill="white"
+            stroke={SELECT_COLOR}
+            strokeWidth={thin}
+            style={{ cursor: "move" }}
+          />
         ))}
 
       {/* rubber band */}

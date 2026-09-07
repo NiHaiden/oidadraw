@@ -1,14 +1,13 @@
 # Local development: Postgres for `pnpm dev` (the app itself runs on the host).
-#   pnpm db:up    # start Postgres (data kept in the named volume)
-#   pnpm dev      # vite :3000 + sync server :8080
+#   pnpm dev      # start Postgres, then Vite :3000 + sync server :3001
 #   pnpm db:down  # stop (data is kept)
-# Port 5432 + credentials match the default DATABASE_URL in server/db.ts,
-# so no env vars are needed for the dev server.
+# Isolated from the production Compose project, including its database volume.
+name: kritzlboard-dev
 services:
   db:
-    image: postgres:18-alpine
+    image: postgres:17-alpine
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5441:5432"
     environment:
       POSTGRES_USER: kritzlboard
       POSTGRES_PASSWORD: kritzlboard

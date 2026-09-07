@@ -30,15 +30,40 @@ network draws together in real time.
 
 ## Quick start (development)
 
+Requires Node.js >= 24, pnpm, and a running Docker engine (Docker Desktop or
+OrbStack). Install dependencies once:
+
 ```bash
 pnpm install
-pnpm db:up   # Postgres via docker-compose.dev.yml (or point DATABASE_URL at your own)
+```
+
+Then start everything with one command:
+
+```bash
 pnpm dev
 ```
 
-This starts the Vite dev server on [http://localhost:3000](http://localhost:3000)
-and the sync/auth server on port 8080 (schema migrations run automatically on
-startup). Open the same board URL in two windows to see live collaboration.
+This starts Postgres in Docker, waits until it is healthy, and runs both the
+frontend and server locally with automatic reloads. Open
+[http://localhost:3000](http://localhost:3000). Vite proxies API and websocket
+requests to the sync/auth server on port 3001; schema migrations run automatically
+on startup. No app image or frontend build is needed.
+
+Press Ctrl+C to stop both local processes. Postgres stays running for the next
+session; `pnpm db:down` stops it while keeping your boards and accounts.
+
+Development uses its own database volume (`kritzlboard-dev_kritzlboard-pgdata`)
+and database port (5441), so it can run alongside the production Docker app.
+It starts with an empty database; existing Docker boards remain in their original
+volume. To work with that existing database instead, or another Postgres instance,
+copy `.env.example` to `.env` and set `DATABASE_URL`. When this is set, `pnpm dev`
+skips Docker startup. The example includes the URL for `docker-compose.yml`'s
+database on port 5440; that database must already be running.
+
+Optional settings in `.env` are loaded for both local processes. Set `PORT` to
+change the local backend port; Vite's proxy follows it automatically. The frontend
+uses port 3000 and reports an error if it is occupied, keeping auth origins
+consistent. Open the same board URL in two windows to see live collaboration.
 
 ## Self-hosting
 
@@ -104,7 +129,9 @@ restrict the whole instance to signed-in users.
 
 | Command          | What it does                                  |
 | ---------------- | --------------------------------------------- |
-| `pnpm dev`       | Vite dev server (:3000) + sync server (:8080) |
+| `pnpm dev`       | Start Postgres + local frontend (:3000) and server (:3001) |
+| `pnpm db:up`     | Start only the development Postgres database and wait for readiness |
+| `pnpm db:down`   | Stop the development database, preserving data |
 | `pnpm build`     | Production client build into `dist/`          |
 | `pnpm start`     | Run the production server (app + sync)        |
 | `pnpm test`      | Unit tests (vitest)                           |

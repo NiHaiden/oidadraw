@@ -2,12 +2,12 @@ import * as Y from "yjs"
 import { WebsocketProvider } from "y-websocket"
 import { useSyncExternalStore } from "react"
 import { getUser } from "@/lib/user"
+import { layoutBoundLine, updateBoundLines } from "./geometry"
 import type { PeerState, Shape, UserInfo } from "./types"
 
 function getSyncUrl(): string {
   const fromEnv = import.meta.env.VITE_SYNC_URL as string | undefined
   if (fromEnv) return fromEnv
-  if (import.meta.env.DEV) return `ws://${location.hostname}:8080/sync`
   const proto = location.protocol === "https:" ? "wss:" : "ws:"
   return `${proto}//${location.host}/sync`
 }
@@ -95,8 +95,16 @@ export class BoardStore {
   private rebuildShapes() {
     const shapes = [...this.yShapes.values()]
     shapes.sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : 1))
-    this.shapesSnapshot = shapes
-    this.shapesById = new Map(shapes.map((s) => [s.id, s]))
+    const byId = new Map(shapes.map((s) => [s.id, s]))
+    // Remote edits can merge a node's new position with an older connector.
+    // Derive the visible endpoints from the merged document without creating
+    // another shared write or an undo entry for a remote change.
+    this.shapesSnapshot = shapes.map((shape) =>
+      shape.type === "line" || shape.type === "arrow"
+        ? layoutBoundLine(shape, (id) => byId.get(id))
+        : shape
+    )
+    this.shapesById = new Map(this.shapesSnapshot.map((s) => [s.id, s]))
   }
 
   private rebuildPeers() {
@@ -134,18 +142,36 @@ export class BoardStore {
   }
 
   putShape(shape: Shape) {
-    this.transact(() => this.yShapes.set(shape.id, shape))
+    this.putShapes([shape])
   }
 
   putShapes(shapes: Array<Shape>) {
+    const all = new Map(this.yShapes)
+    for (const shape of shapes) all.set(shape.id, shape)
+    const updated = updateBoundLines(shapes, [...all.values()])
     this.transact(() => {
-      for (const shape of shapes) this.yShapes.set(shape.id, shape)
+      // Keep node changes and attached connectors in the same undo step.
+      for (const shape of updated) this.yShapes.set(shape.id, shape)
     })
   }
 
   deleteShapes(ids: Iterable<string>) {
+    const deleted = new Set(ids)
     this.transact(() => {
-      for (const id of ids) this.yShapes.delete(id)
+      // A remote node edit can leave stored endpoints behind the displayed
+      // ones. Freeze the current geometry before a target disappears, while
+      // retaining its binding ID so undo can restore the attachment.
+      for (const shape of this.shapesSnapshot) {
+        if (deleted.has(shape.id)) continue
+        if (shape.type !== "line" && shape.type !== "arrow") continue
+        if (
+          (shape.startBinding && deleted.has(shape.startBinding)) ||
+          (shape.endBinding && deleted.has(shape.endBinding))
+        ) {
+          this.yShapes.set(shape.id, shape)
+        }
+      }
+      for (const id of deleted) this.yShapes.delete(id)
     })
   }
 

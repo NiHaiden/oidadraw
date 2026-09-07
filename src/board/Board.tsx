@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { nanoid } from "nanoid"
 import { useShapes } from "./store"
 import { ShapeView } from "./ShapeView"
+import { BindingOverlay } from "./BindingOverlay"
 import { SelectionOverlay } from "./SelectionOverlay"
 import { PeerCursors } from "./PeerCursors"
 import { TextEditor } from "./TextEditor"
@@ -20,19 +21,29 @@ import {
   bindTargetAt,
   boxFromPoints,
   boxesIntersect,
+  getBindingAnchor,
+  getBindingMargin,
   getCommonBounds,
   getShapeBounds,
-  layoutBoundLine,
   resizeBox,
   resizeShape,
+  resolveBindingAnchor,
   screenToWorld,
   snapAngle,
   translateShape,
-  updateBoundLines,
 } from "./geometry"
 import type { BoardStore } from "./store"
 import type { Box, HandleId, Point } from "./geometry"
-import type { Camera, Shape, StyleDefaults, TextShape, ToolId } from "./types"
+import type {
+  BindingAnchor,
+  BindingPointId,
+  Camera,
+  LineShape,
+  Shape,
+  StyleDefaults,
+  TextShape,
+  ToolId,
+} from "./types"
 
 const STYLE_KEY = "kritzlboard:style"
 const MIN_ZOOM = 0.1
@@ -71,8 +82,24 @@ type Session =
   | { kind: "brush"; startWorld: Point; baseSelection: ReadonlySet<string> }
   | { kind: "draw"; id: string; rawPoints: Array<Point> }
   | { kind: "box-new"; id: string; startWorld: Point }
-  | { kind: "line-new"; id: string; startWorld: Point }
+  | {
+      kind: "line-new"
+      id: string
+      startWorld: Point
+      start: {
+        targetId: string
+        anchor: BindingAnchor
+        fromCenter: boolean
+      } | null
+    }
   | { kind: "erase" }
+
+interface BindingPreview {
+  targetId: string
+  anchor: BindingAnchor
+  point: Point
+  snapPointId?: BindingPointId
+}
 
 // simple module-level clipboard for copy/paste within the app
 let clipboard: Array<Shape> = []
@@ -101,13 +128,13 @@ export function Board({ store }: { store: BoardStore }) {
     () => new Set()
   )
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [textSelectedId, setTextSelectedId] = useState<string | null>(null)
   const [style, setStyle] = useState<StyleDefaults>(loadStyleDefaults)
   const [spaceDown, setSpaceDown] = useState(false)
   const [brushBox, setBrushBox] = useState<Box | null>(null)
   const [eraseSet, setEraseSet] = useState<ReadonlySet<string>>(() => new Set())
-  /** shape an arrow endpoint would latch onto right now (highlighted) */
-  const [snapTargetId, setSnapTargetId] = useState<string | null>(null)
+  const [bindingPreview, setBindingPreview] = useState<BindingPreview | null>(
+    null
+  )
 
   const selectedShapes = useMemo(
     () => shapes.filter((s) => selection.has(s.id)),
@@ -135,13 +162,6 @@ export function Board({ store }: { store: BoardStore }) {
     if (live.length !== selection.size) setSelection(new Set(live))
   }, [shapes, selection, store])
 
-  // clear text selection when the shape is deleted
-  useEffect(() => {
-    if (textSelectedId != null && !store.getShape(textSelectedId)) {
-      setTextSelectedId(null)
-    }
-  }, [shapes, textSelectedId, store])
-
   // stop editing when the edited shape is deleted (e.g. by a peer)
   useEffect(() => {
     if (editingId != null && !store.getShape(editingId)) setEditingId(null)
@@ -154,6 +174,60 @@ export function Board({ store }: { store: BoardStore }) {
       cameraRef.current
     )
   }, [])
+
+  const findBinding = (
+    point: Point,
+    excludeId?: string,
+    toward?: Point
+  ): BindingPreview | null => {
+    const target = bindTargetAt(
+      point,
+      store.getShapes(),
+      getBindingMargin(cameraRef.current.z),
+      excludeId
+    )
+    return target
+      ? {
+          targetId: target.id,
+          ...getBindingAnchor(target, point, cameraRef.current.z, toward),
+        }
+      : null
+  }
+
+  const findEndpointBinding = (
+    line: LineShape,
+    which: "start" | "end",
+    point: Point
+  ) => {
+    const start = { x: line.x, y: line.y }
+    const end = { x: line.x + line.dx, y: line.y + line.dy }
+    const toward = which === "end" ? start : end
+    const other = which === "end" ? line.startBinding : line.endBinding
+    const binding = findBinding(point, other, toward)
+    if (binding) return binding
+
+    // Older endpoints sit six world units outside the outline. Let their
+    // visible handles be picked up without expanding every node's snap zone.
+    const endpoint = which === "end" ? end : start
+    if (
+      Math.hypot(point.x - endpoint.x, point.y - endpoint.y) >
+      12 / cameraRef.current.z
+    )
+      return null
+    const targetId = which === "end" ? line.endBinding : line.startBinding
+    const target =
+      targetId && targetId !== other ? store.getShape(targetId) : undefined
+    return target
+      ? {
+          targetId: target.id,
+          ...getBindingAnchor(target, point, cameraRef.current.z, toward),
+        }
+      : null
+  }
+
+  useEffect(() => {
+    setBindingPreview(null)
+  }, [tool])
 
   const zoomAt = useCallback((screen: Point, nextZ: number) => {
     const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZ))
@@ -223,7 +297,10 @@ export function Board({ store }: { store: BoardStore }) {
             if (!bound) continue
             const mapped = idMap.get(bound)
             if (mapped) clone[key] = mapped
-            else delete clone[key]
+            else {
+              delete clone[key]
+              delete clone[key === "startBinding" ? "startAnchor" : "endAnchor"]
+            }
           }
         }
         return clone
@@ -473,10 +550,8 @@ export function Board({ store }: { store: BoardStore }) {
 
     switch (tool) {
       case "select": {
-        // clicking a resize handle clears text selection
         if (e.target instanceof Element) {
           const handleEl = e.target.closest("[data-resize-handle]")
-          if (handleEl) setTextSelectedId(null)
           if (handleEl && selectedShapes.length > 0) {
             const from = getCommonBounds(selectedShapes)!
             sessionRef.current = {
@@ -489,13 +564,17 @@ export function Board({ store }: { store: BoardStore }) {
           }
           const lineEndEl = e.target.closest("[data-line-handle]")
           if (lineEndEl && selectedShapes.length === 1) {
+            const original = selectedShapes[0]
+            const which = lineEndEl.getAttribute("data-line-handle") as
+              "start" | "end"
+            if (original.type !== "line" && original.type !== "arrow") return
             sessionRef.current = {
               kind: "line-end",
-              id: selectedShapes[0].id,
-              which: lineEndEl.getAttribute("data-line-handle") as
-                "start" | "end",
-              original: selectedShapes[0],
+              id: original.id,
+              which,
+              original,
             }
+            setBindingPreview(findEndpointBinding(original, which, world))
             return
           }
         }
@@ -508,7 +587,6 @@ export function Board({ store }: { store: BoardStore }) {
             if (nextSelection.has(hitId)) {
               nextSelection.delete(hitId)
               setSelection(nextSelection)
-              setTextSelectedId(null)
               return
             }
             nextSelection.add(hitId)
@@ -518,13 +596,6 @@ export function Board({ store }: { store: BoardStore }) {
             nextSelection = new Set([hitId])
           }
           setSelection(nextSelection)
-          // text-focused selection: single text-editable shape
-          const shape = store.getShape(hitId)
-          if (shape && isTextEditable(shape) && !e.shiftKey) {
-            setTextSelectedId(hitId)
-          } else {
-            setTextSelectedId(null)
-          }
           sessionRef.current = {
             kind: "move",
             clickedId: hitId,
@@ -543,7 +614,6 @@ export function Board({ store }: { store: BoardStore }) {
         }
         if (!e.shiftKey) {
           setSelection(new Set())
-          setTextSelectedId(null)
         }
         return
       }
@@ -592,7 +662,7 @@ export function Board({ store }: { store: BoardStore }) {
 
       case "line":
       case "arrow": {
-        const startTarget = bindTargetAt(world, store.getShapes())
+        const start = findBinding(world)
         const shape: Shape = {
           id: nanoid(12),
           type: tool,
@@ -604,14 +674,31 @@ export function Board({ store }: { store: BoardStore }) {
           y: world.y,
           dx: 0,
           dy: 0,
-          ...(startTarget ? { startBinding: startTarget.id } : {}),
+          ...(start
+            ? { startBinding: start.targetId, startAnchor: start.anchor }
+            : {}),
         }
-        setSnapTargetId(startTarget?.id ?? null)
+        setBindingPreview(start)
         store.putShape(shape)
+        const startBounds = start
+          ? getShapeBounds(store.getShape(start.targetId)!)
+          : undefined
         sessionRef.current = {
           kind: "line-new",
           id: shape.id,
           startWorld: world,
+          start:
+            start && startBounds
+              ? {
+                  targetId: start.targetId,
+                  anchor: start.anchor,
+                  fromCenter:
+                    Math.hypot(
+                      world.x - startBounds.x - startBounds.w / 2,
+                      world.y - startBounds.y - startBounds.h / 2
+                    ) < 1e-9,
+                }
+              : null,
         }
         return
       }
@@ -640,7 +727,14 @@ export function Board({ store }: { store: BoardStore }) {
     store.setCursor({ x: world.x, y: world.y })
 
     const session = sessionRef.current
-    if (!session) return
+    if (!session) {
+      setBindingPreview(
+        (tool === "arrow" || tool === "line") && !spaceDown && !editingId
+          ? findBinding(world)
+          : null
+      )
+      return
+    }
 
     switch (session.kind) {
       case "pan": {
@@ -671,14 +765,16 @@ export function Board({ store }: { store: BoardStore }) {
           if (m.type === "line" || m.type === "arrow") {
             if (m.startBinding && !movedIds.has(m.startBinding)) {
               delete m.startBinding
+              delete m.startAnchor
             }
             if (m.endBinding && !movedIds.has(m.endBinding)) {
               delete m.endBinding
+              delete m.endAnchor
             }
           }
           return m
         })
-        store.putShapes(updateBoundLines(moved, store.getShapes()))
+        store.putShapes(moved)
         return
       }
 
@@ -703,10 +799,7 @@ export function Board({ store }: { store: BoardStore }) {
           }
         }
         store.putShapes(
-          updateBoundLines(
-            session.original.map((s) => resizeShape(s, session.from, to)),
-            store.getShapes()
-          )
+          session.original.map((s) => resizeShape(s, session.from, to))
         )
         return
       }
@@ -733,15 +826,17 @@ export function Board({ store }: { store: BoardStore }) {
           next.dy = dy
         }
         // latch the dragged end; never both ends onto the same shape
-        const other =
-          session.which === "end" ? next.startBinding : next.endBinding
-        const target = bindTargetAt(world, store.getShapes())
-        const targetId = target && target.id !== other ? target.id : undefined
+        const binding = findEndpointBinding(orig, session.which, world)
         const key = session.which === "end" ? "endBinding" : "startBinding"
+        const anchorKey = session.which === "end" ? "endAnchor" : "startAnchor"
         delete next[key]
-        if (targetId) next[key] = targetId
-        setSnapTargetId(targetId ?? null)
-        store.putShape(layoutBoundLine(next, (id) => store.getShape(id)))
+        delete next[anchorKey]
+        if (binding) {
+          next[key] = binding.targetId
+          next[anchorKey] = binding.anchor
+        }
+        setBindingPreview(binding)
+        store.putShape(next)
         return
       }
 
@@ -819,10 +914,33 @@ export function Board({ store }: { store: BoardStore }) {
         let dx = world.x - session.startWorld.x
         let dy = world.y - session.startWorld.y
         if (e.shiftKey) ({ x: dx, y: dy } = snapAngle(dx, dy, Math.PI / 4))
-        const target = bindTargetAt(world, store.getShapes())
-        const targetId =
-          target && target.id !== shape.startBinding ? target.id : undefined
-        // rebuild from the pristine anchor; layout then clips bound ends
+        // Keep the point chosen at pointerdown. A center-start gesture uses
+        // the drag direction to choose an edge until the connector is placed.
+        const startTarget = session.start
+          ? store.getShape(session.start.targetId)
+          : undefined
+        let start: { anchor: BindingAnchor; point: Point } | undefined
+        if (startTarget && session.start) {
+          if (session.start.fromCenter) {
+            const bounds = getShapeBounds(startTarget)
+            start = getBindingAnchor(
+              startTarget,
+              { x: bounds.x + bounds.w / 2, y: bounds.y + bounds.h / 2 },
+              cameraRef.current.z,
+              world
+            )
+          } else {
+            start = {
+              anchor: session.start.anchor,
+              point: resolveBindingAnchor(startTarget, session.start.anchor),
+            }
+          }
+        }
+        const end = findBinding(
+          world,
+          shape.startBinding,
+          start?.point ?? session.startWorld
+        )
         const next = {
           ...shape,
           x: session.startWorld.x,
@@ -830,10 +948,15 @@ export function Board({ store }: { store: BoardStore }) {
           dx,
           dy,
         }
+        if (start) next.startAnchor = start.anchor
         delete next.endBinding
-        if (targetId) next.endBinding = targetId
-        setSnapTargetId(targetId ?? null)
-        store.putShape(layoutBoundLine(next, (id) => store.getShape(id)))
+        delete next.endAnchor
+        if (end) {
+          next.endBinding = end.targetId
+          next.endAnchor = end.anchor
+        }
+        setBindingPreview(end)
+        store.putShape(next)
         return
       }
 
@@ -852,8 +975,15 @@ export function Board({ store }: { store: BoardStore }) {
 
   const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
     const session = sessionRef.current
+    // A release can arrive at a newer position than the last pointermove.
+    if (
+      e.type === "pointerup" &&
+      (session?.kind === "line-new" || session?.kind === "line-end")
+    ) {
+      onPointerMove(e)
+    }
     sessionRef.current = null
-    setSnapTargetId(null)
+    setBindingPreview(null)
     if (svgRef.current?.hasPointerCapture(e.pointerId)) {
       svgRef.current.releasePointerCapture(e.pointerId)
     }
@@ -884,10 +1014,48 @@ export function Board({ store }: { store: BoardStore }) {
       case "line-new": {
         const shape = store.getShape(session.id)
         if (shape && (shape.type === "line" || shape.type === "arrow")) {
-          if (Math.hypot(shape.dx, shape.dy) < 4) {
-            const next = { ...shape, dx: 120, dy: 0 }
+          const world = toWorld(e)
+          const dragged =
+            Math.hypot(
+              world.x - session.startWorld.x,
+              world.y - session.startWorld.y
+            ) * cameraRef.current.z
+          if (dragged < 4 && !shape.endBinding) {
+            const next = {
+              ...shape,
+              x: session.startWorld.x,
+              y: session.startWorld.y,
+              dx: 120,
+              dy: 0,
+            }
+            const target = session.start
+              ? store.getShape(session.start.targetId)
+              : undefined
+            if (target && session.start) {
+              const bounds = getShapeBounds(target)
+              const center = {
+                x: bounds.x + bounds.w / 2,
+                y: bounds.y + bounds.h / 2,
+              }
+              const anchor = session.start.fromCenter
+                ? getBindingAnchor(target, center, cameraRef.current.z, {
+                    x: center.x + 120,
+                    y: center.y,
+                  }).anchor
+                : session.start.anchor
+              const point = resolveBindingAnchor(target, anchor)
+              const dx = point.x - center.x
+              const dy = point.y - center.y
+              const length = Math.hypot(dx, dy)
+              next.startAnchor = anchor
+              next.x = point.x
+              next.y = point.y
+              next.dx = length > 0 ? (dx / length) * 120 : 120
+              next.dy = length > 0 ? (dy / length) * 120 : 0
+            }
             delete next.endBinding
-            store.putShape(layoutBoundLine(next, (id) => store.getShape(id)))
+            delete next.endAnchor
+            store.putShape(next)
           }
           setSelection(new Set([session.id]))
         }
@@ -906,12 +1074,12 @@ export function Board({ store }: { store: BoardStore }) {
 
   const onPointerLeave = () => {
     store.setCursor(null)
+    if (!sessionRef.current) setBindingPreview(null)
   }
 
   const onDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (tool !== "select") return
     sessionRef.current = null
-    setTextSelectedId(null)
     // hit-test by point: pointer capture on the svg retargets the dblclick
     // event itself to the svg, so e.target never points at the shape
     let hitId: string | null = null
@@ -1046,27 +1214,6 @@ export function Board({ store }: { store: BoardStore }) {
               />
             )
           )}
-          {snapTargetId &&
-            (() => {
-              const target = store.getShape(snapTargetId)
-              if (!target) return null
-              const b = getShapeBounds(target)
-              const pad = 3 / camera.z
-              return (
-                <rect
-                  x={b.x - pad}
-                  y={b.y - pad}
-                  width={b.w + pad * 2}
-                  height={b.h + pad * 2}
-                  rx={6}
-                  fill="none"
-                  stroke="#3667e8"
-                  strokeWidth={1.5 / camera.z}
-                  strokeDasharray={`${4 / camera.z} ${4 / camera.z}`}
-                  pointerEvents="none"
-                />
-              )
-            })()}
           <SelectionOverlay
             store={store}
             shapes={shapes}
@@ -1074,8 +1221,19 @@ export function Board({ store }: { store: BoardStore }) {
             camera={camera}
             brushBox={brushBox}
             hideHandles={editingId != null}
-            textSelectedId={textSelectedId}
           />
+          {bindingPreview &&
+            (() => {
+              const target = store.getShape(bindingPreview.targetId)
+              return target ? (
+                <BindingOverlay
+                  shape={target}
+                  anchor={bindingPreview.anchor}
+                  snapPointId={bindingPreview.snapPointId}
+                  zoom={camera.z}
+                />
+              ) : null
+            })()}
         </g>
         <PeerCursors store={store} camera={camera} />
       </svg>

@@ -116,6 +116,16 @@ export interface EllipseShape extends BaseShape {
   textSize?: TextSizeId
 }
 
+export type BindingPointId = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w"
+
+/** A fixed attachment on the target's outline, in normalized box coordinates. */
+export interface BindingAnchor {
+  x: number
+  y: number
+  /** Named points preserve their position on curved corners when resized. */
+  snap?: BindingPointId
+}
+
 /** Line/arrow from (x, y) to (x + dx, y + dy). dx/dy may be negative. */
 export interface LineShape extends BaseShape {
   type: "line" | "arrow"
@@ -128,6 +138,9 @@ export interface LineShape extends BaseShape {
    * from the target's edge whenever either shape changes (absent = free) */
   startBinding?: string
   endBinding?: string
+  /** Absent on older bindings, which retain their automatic edge positioning. */
+  startAnchor?: BindingAnchor
+  endAnchor?: BindingAnchor
   /** label text, centered on the line's midpoint (absent on older boards) */
   text?: string
   /** label typeface (absent on older boards) */
