@@ -1,5 +1,5 @@
-import { FONT_STYLES } from "./types"
-import type { FontId } from "./types"
+import { FONT_STYLES } from "@kritzlboard/core"
+import type { FontId } from "@kritzlboard/core"
 
 let probe: HTMLDivElement | null = null
 

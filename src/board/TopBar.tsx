@@ -8,7 +8,7 @@ import { touchBoardOnServer } from "@/lib/boards"
 import { signOut, useSession } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 import type { BoardStore } from "./store"
-import type { UserInfo } from "./types"
+import type { UserInfo } from "@kritzlboard/core"
 
 function initials(name: string): string {
   return name

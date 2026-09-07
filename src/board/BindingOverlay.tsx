@@ -2,8 +2,8 @@ import {
   getBindingPoints,
   getShapeBounds,
   resolveBindingAnchor,
-} from "./geometry"
-import type { BindingAnchor, BindingPointId, Shape } from "./types"
+} from "@kritzlboard/core"
+import type { BindingAnchor, BindingPointId, Shape } from "@kritzlboard/core"
 
 /** Connection guides follow the outline, separate from selection resize handles. */
 export function BindingOverlay({

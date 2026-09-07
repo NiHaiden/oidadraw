@@ -5,10 +5,9 @@ import {
   getCommonBounds,
   getHandlePosition,
   getShapeBounds,
-} from "./geometry"
+} from "@kritzlboard/core"
 import type { BoardStore } from "./store"
-import type { Box } from "./geometry"
-import type { Camera, Shape } from "./types"
+import type { Box, Camera, Shape } from "@kritzlboard/core"
 
 const SELECT_COLOR = "#3667e8"
 

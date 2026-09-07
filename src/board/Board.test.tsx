@@ -4,7 +4,12 @@ import { act, cleanup, fireEvent, render } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { Board } from "./Board"
 import { BoardStore } from "./store"
-import type { EllipseShape, LineShape, RectShape, Shape } from "./types"
+import type {
+  EllipseShape,
+  LineShape,
+  RectShape,
+  Shape,
+} from "@kritzlboard/core"
 
 // Keep the real Yjs store and subscriptions without opening a sync connection.
 vi.mock("y-websocket", async () => {

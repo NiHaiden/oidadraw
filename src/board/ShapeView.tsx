@@ -7,8 +7,8 @@ import {
   STROKE_WIDTHS,
   shapeFont,
   shapeFontSize,
-} from "./types"
-import type { DrawShape, FontId, LineShape, Shape } from "./types"
+} from "@kritzlboard/core"
+import type { DrawShape, FontId, LineShape, Shape } from "@kritzlboard/core"
 
 export function getSvgPathFromStroke(points: Array<Array<number>>): string {
   if (points.length === 0) return ""

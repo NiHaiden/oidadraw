@@ -1,4 +1,9 @@
-import { COLOR_IDS, FONT_STYLES, PALETTE, isTextEditable } from "./types"
+import {
+  COLOR_IDS,
+  FONT_STYLES,
+  PALETTE,
+  isTextEditable,
+} from "@kritzlboard/core"
 import { cn } from "@/lib/utils"
 import type {
   FillStyle,
@@ -9,7 +14,7 @@ import type {
   StrokeStyle,
   TextSizeId,
   ToolId,
-} from "./types"
+} from "@kritzlboard/core"
 
 const SHAPE_TOOLS: Array<ToolId> = [
   "draw",

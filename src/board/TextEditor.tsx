@@ -1,8 +1,13 @@
 import { useEffect, useRef } from "react"
-import { worldToScreen } from "./geometry"
-import { FONT_STYLES, PALETTE, shapeFont, shapeFontSize } from "./types"
+import {
+  worldToScreen,
+  FONT_STYLES,
+  PALETTE,
+  shapeFont,
+  shapeFontSize,
+} from "@kritzlboard/core"
 import type { BoardStore } from "./store"
-import type { Camera, TextEditableShape } from "./types"
+import type { Camera, TextEditableShape } from "@kritzlboard/core"
 
 /**
  * HTML overlay for editing text in place — either a standalone text shape or

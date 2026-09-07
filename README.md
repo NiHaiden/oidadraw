@@ -108,6 +108,11 @@ restrict the whole instance to signed-in users.
 
 ## How it works
 
+- **Core package** (`packages/core`, `@kritzlboard/core`): reusable shape types,
+  geometry, connector layout, and a local Yjs document store. It has no React or
+  network dependency. See [the package README](packages/core/README.md) for its
+  API and lifecycle. The app consumes its compiled workspace exports; development
+  watches the core package along with the frontend.
 - **Client**: React + TanStack Router SPA. The canvas is plain SVG; shapes
   live in a Yjs document (`Y.Map` of plain shape objects), so every change is
   a CRDT update. Cursors/selections use the Yjs awareness protocol. Freehand

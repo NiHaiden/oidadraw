@@ -15,7 +15,7 @@ import { useCanUndoRedo } from "./store"
 import { cn } from "@/lib/utils"
 import type { LucideIcon } from "lucide-react"
 import type { BoardStore } from "./store"
-import type { ToolId } from "./types"
+import type { ToolId } from "@kritzlboard/core"
 
 const TOOLS: Array<{
   id: ToolId

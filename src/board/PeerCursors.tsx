@@ -1,7 +1,7 @@
 import { usePeers } from "./store"
-import { worldToScreen } from "./geometry"
+import { worldToScreen } from "@kritzlboard/core"
 import type { BoardStore } from "./store"
-import type { Camera } from "./types"
+import type { Camera } from "@kritzlboard/core"
 
 export function PeerCursors({
   store,

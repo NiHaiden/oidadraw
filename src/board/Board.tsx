@@ -15,9 +15,6 @@ import {
   DEFAULT_TEXT_SIZE,
   TEXT_FONT_SIZES,
   isTextEditable,
-} from "./types"
-import { measureTextBox } from "./measureText"
-import {
   bindTargetAt,
   boxFromPoints,
   boxesIntersect,
@@ -31,10 +28,13 @@ import {
   screenToWorld,
   snapAngle,
   translateShape,
-} from "./geometry"
+} from "@kritzlboard/core"
+import { measureTextBox } from "./measureText"
 import type { BoardStore } from "./store"
-import type { Box, HandleId, Point } from "./geometry"
 import type {
+  Box,
+  HandleId,
+  Point,
   BindingAnchor,
   BindingPointId,
   Camera,
@@ -43,7 +43,7 @@ import type {
   StyleDefaults,
   TextShape,
   ToolId,
-} from "./types"
+} from "@kritzlboard/core"
 
 const STYLE_KEY = "kritzlboard:style"
 const MIN_ZOOM = 0.1
@@ -305,7 +305,7 @@ export function Board({ store }: { store: BoardStore }) {
         }
         return clone
       })
-      store.undoManager.stopCapturing()
+      store.stopCapturing()
       store.putShapes(clones)
       setSelection(new Set(clones.map((s) => s.id)))
       setTool("select")
@@ -394,7 +394,7 @@ export function Board({ store }: { store: BoardStore }) {
             const shape = store.getShape([...selection][0])
             if (shape && isTextEditable(shape)) {
               e.preventDefault()
-              store.undoManager.stopCapturing()
+              store.stopCapturing()
               setEditingId(shape.id)
             }
           }
@@ -497,7 +497,7 @@ export function Board({ store }: { store: BoardStore }) {
         fontSize,
         font: style.font,
       }
-      store.undoManager.stopCapturing()
+      store.stopCapturing()
       store.putShape(shape)
       return shape
     },
@@ -546,7 +546,7 @@ export function Board({ store }: { store: BoardStore }) {
       return
     }
 
-    store.undoManager.stopCapturing()
+    store.stopCapturing()
 
     switch (tool) {
       case "select": {
@@ -1094,7 +1094,7 @@ export function Board({ store }: { store: BoardStore }) {
       const shape = store.getShape(hitId)
       // standalone text, or the label of a box/ellipse/line/arrow
       if (shape && isTextEditable(shape)) {
-        store.undoManager.stopCapturing()
+        store.stopCapturing()
         setSelection(new Set([hitId]))
         setEditingId(shape.id)
       }
@@ -1109,7 +1109,7 @@ export function Board({ store }: { store: BoardStore }) {
   const onStyleChange = (patch: Partial<StyleDefaults>) => {
     setStyle((prev) => ({ ...prev, ...patch }))
     if (selectedShapes.length === 0) return
-    store.undoManager.stopCapturing()
+    store.stopCapturing()
     store.putShapes(
       selectedShapes.map((shape) => {
         let next: Shape = { ...shape }
