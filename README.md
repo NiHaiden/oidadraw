@@ -118,6 +118,10 @@ restrict the whole instance to signed-in users.
   See [the embedding guide](packages/react/README.md) for usage and custom controls.
   Run `pnpm dev:web` and open `/examples/react-embedding/` to try two independent
   local boards without a backend.
+- **Sync package** (`packages/sync`, `@kritzlboard/sync`): optional WebSocket
+  synchronization, peer presence, and connection status for a supplied core store.
+  Hosts provide the server URL and user identity. See [the collaboration guide](packages/sync/README.md)
+  for the connection lifecycle and React usage.
 - **Client**: React + TanStack Router SPA that composes the React package with
   application navigation, authentication, preferences, sync, and presence.
   The canvas is plain SVG; shapes

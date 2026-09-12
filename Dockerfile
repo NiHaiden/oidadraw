@@ -4,6 +4,7 @@ RUN npm install -g pnpm@11
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/core/package.json packages/core/
 COPY packages/react/package.json packages/react/
+COPY packages/sync/package.json packages/sync/
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build

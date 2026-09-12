@@ -26,7 +26,7 @@ export function Board({ store }: { store: BoardStore }) {
     <div className="application-board">
       <ReactBoard
         store={store}
-        presence={store}
+        presence={store.connection}
         initialStyle={loadStyle()}
         onStyleChange={saveStyle}
       >

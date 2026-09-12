@@ -11,7 +11,7 @@ function reloadWorkspacePackages(): Plugin {
   return {
     name: "reload-workspace-packages",
     handleHotUpdate({ file, server }) {
-      if (!/\/packages\/(core|react)\/dist\//.test(file)) return
+      if (!/\/packages\/(core|react|sync)\/dist\//.test(file)) return
       clearTimeout(pending)
       pending = setTimeout(() => server.ws.send({ type: "full-reload" }), 100)
       return []

@@ -50,9 +50,10 @@ undo history.
 The caller owns any attached transport and must destroy it before calling
 `store.destroy()`. Destroying a store is idempotent. Do not reuse it afterward.
 
-The current application's `src/board/store.ts` extends this store with WebSocket
-sync, presence, and application connection subscriptions. Those integrations are
-outside this package. Reusable React subscriptions, DOM text measurement, canvas
+[`@kritzlboard/sync`](../sync/README.md) attaches optional WebSocket sync and peer
+presence to a store. The current application's `src/board/store.ts` owns a local
+store and its connection, supplying the endpoint and current identity. Reusable
+React subscriptions, DOM text measurement, canvas
 rendering, and editing controls live in [`@kritzlboard/react`](../react/README.md).
 
 ## Development

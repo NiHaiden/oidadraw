@@ -99,7 +99,8 @@ the complete API.
 
 ## Collaboration and preferences
 
-Attach a transport to the supplied core store's `doc` to synchronize content.
+Use [`@kritzlboard/sync`](../sync/README.md) to connect the supplied core store,
+or attach another transport to its `doc` to synchronize content.
 Peer cursors and selections are optional and supplied separately through the
 `presence` prop, which implements `BoardPresence`:
 
@@ -109,8 +110,8 @@ Peer cursors and selections are optional and supplied separately through the
 - `setSelectionPresence(ids)` publishes the selected shape IDs.
 
 Pass stable, bound functions. The editor clears its cursor and selection when it
-unmounts; the host remains responsible for closing the transport. The existing
-application's store implements both core storage and this presence interface.
+unmounts; the host remains responsible for closing the transport. Pass a sync
+package `BoardConnection` directly as `presence`, as the existing application does.
 
 `initialStyle` sets drawing defaults when an editor session starts.
 `onStyleChange(style)` lets the host persist preferences; the package itself does

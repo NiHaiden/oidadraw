@@ -35,7 +35,7 @@ function Avatar({ user, title }: { user: UserInfo; title?: string }) {
 export function TopBar({ store }: { store: BoardStore }) {
   const navigate = useNavigate()
   const name = useBoardName(store)
-  const peers = usePeers(store)
+  const peers = usePeers(store.connection)
   const status = useConnectionStatus(store)
   const { data: session, isPending } = useSession()
   const [me, setMe] = useState<UserInfo>(getUser)
@@ -59,7 +59,7 @@ export function TopBar({ store }: { store: BoardStore }) {
     if (accountName && accountName !== getUser().name) {
       const user = setUserName(accountName)
       setMe(user)
-      store.setUser(user)
+      store.connection.setUser(user)
     }
   }, [session?.user.name, store])
 
@@ -153,7 +153,7 @@ export function TopBar({ store }: { store: BoardStore }) {
                   onChange={(e) => {
                     const user = setUserName(e.target.value)
                     setMe(user)
-                    store.setUser(user)
+                    store.connection.setUser(user)
                   }}
                 />
                 <div className="mt-3 border-t border-border pt-2.5">
