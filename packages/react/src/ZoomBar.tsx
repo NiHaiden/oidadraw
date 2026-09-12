@@ -14,34 +14,38 @@ export function ZoomBar({
   onZoomToFit: () => void
 }) {
   return (
-    <div className="absolute bottom-4 left-3 flex items-center gap-0.5 rounded-xl border border-border bg-white p-1 shadow-lg">
+    <div className="kb-zoom kb-panel">
       <button
-        className="flex size-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100"
+        type="button"
+        className="kb-icon-button kb-zoom-button"
         title="Zoom out (Ctrl+-)"
         onClick={onZoomOut}
       >
-        <Minus className="size-4" />
+        <Minus className="kb-zoom-icon" />
       </button>
       <button
-        className="w-12 rounded-lg py-1.5 text-center text-xs text-neutral-700 tabular-nums hover:bg-neutral-100"
+        type="button"
+        className="kb-zoom-value"
         title="Reset zoom (Ctrl+0)"
         onClick={onZoomReset}
       >
         {Math.round(zoom * 100)}%
       </button>
       <button
-        className="flex size-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100"
+        type="button"
+        className="kb-icon-button kb-zoom-button"
         title="Zoom in (Ctrl++)"
         onClick={onZoomIn}
       >
-        <Plus className="size-4" />
+        <Plus className="kb-zoom-icon" />
       </button>
       <button
-        className="flex size-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100"
+        type="button"
+        className="kb-icon-button kb-zoom-button"
         title="Zoom to fit"
         onClick={onZoomToFit}
       >
-        <Maximize className="size-4" />
+        <Maximize className="kb-zoom-icon" />
       </button>
     </div>
   )

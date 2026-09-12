@@ -4,11 +4,15 @@ import { RouterProvider } from "@tanstack/react-router"
 
 import { getRouter } from "./router"
 import "./styles.css"
+import "@kritzlboard/react/styles.css"
 
 const router = getRouter()
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!)
+root.render(
   <StrictMode>
     <RouterProvider router={router} />
   </StrictMode>
 )
+
+if (import.meta.hot) import.meta.hot.dispose(() => root.unmount())

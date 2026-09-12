@@ -112,8 +112,15 @@ restrict the whole instance to signed-in users.
   geometry, connector layout, and a local Yjs document store. It has no React or
   network dependency. See [the package README](packages/core/README.md) for its
   API and lifecycle. The app consumes its compiled workspace exports; development
-  watches the core package along with the frontend.
-- **Client**: React + TanStack Router SPA. The canvas is plain SVG; shapes
+  watches the workspace packages along with the frontend.
+- **React package** (`packages/react`, `@kritzlboard/react`): embeddable canvas,
+  editing interactions, React hooks, and composable controls with standalone CSS.
+  See [the embedding guide](packages/react/README.md) for usage and custom controls.
+  Run `pnpm dev:web` and open `/examples/react-embedding/` to try two independent
+  local boards without a backend.
+- **Client**: React + TanStack Router SPA that composes the React package with
+  application navigation, authentication, preferences, sync, and presence.
+  The canvas is plain SVG; shapes
   live in a Yjs document (`Y.Map` of plain shape objects), so every change is
   a CRDT update. Cursors/selections use the Yjs awareness protocol. Freehand
   strokes are rendered with

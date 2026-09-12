@@ -2,7 +2,7 @@ import { BoardStore as CoreBoardStore } from "@kritzlboard/core"
 import { WebsocketProvider } from "y-websocket"
 import { useSyncExternalStore } from "react"
 import { getUser } from "@/lib/user"
-import type { PeerState, Shape, UserInfo } from "@kritzlboard/core"
+import type { PeerState, UserInfo } from "@kritzlboard/core"
 
 function getSyncUrl(): string {
   const fromEnv = import.meta.env.VITE_SYNC_URL as string | undefined
@@ -89,10 +89,6 @@ export class BoardStore extends CoreBoardStore {
 
 // --- hooks -----------------------------------------------------------------
 
-export function useShapes(store: BoardStore): Array<Shape> {
-  return useSyncExternalStore(store.subscribe, store.getShapes)
-}
-
 export function usePeers(store: BoardStore): Array<PeerState> {
   return useSyncExternalStore(store.subscribe, store.getPeers)
 }
@@ -101,15 +97,4 @@ export function useConnectionStatus(store: BoardStore): ConnectionStatus {
   return useSyncExternalStore(store.subscribe, store.getStatus)
 }
 
-export function useBoardName(store: BoardStore): string {
-  return useSyncExternalStore(store.subscribe, store.getBoardName)
-}
-
-export function useCanUndoRedo(store: BoardStore): {
-  canUndo: boolean
-  canRedo: boolean
-} {
-  const canUndo = useSyncExternalStore(store.subscribe, store.getCanUndo)
-  const canRedo = useSyncExternalStore(store.subscribe, store.getCanRedo)
-  return { canUndo, canRedo }
-}
+export { useBoardName } from "@kritzlboard/react"

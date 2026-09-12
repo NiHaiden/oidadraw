@@ -1,17 +1,13 @@
-import { usePeers } from "./store"
+import type { PeerState, Camera } from "@kritzlboard/core"
 import { worldToScreen } from "@kritzlboard/core"
-import type { BoardStore } from "./store"
-import type { Camera } from "@kritzlboard/core"
 
 export function PeerCursors({
-  store,
+  peers,
   camera,
 }: {
-  store: BoardStore
+  peers: Array<PeerState>
   camera: Camera
 }) {
-  const peers = usePeers(store)
-
   return (
     <g pointerEvents="none">
       {peers.map((peer) => {

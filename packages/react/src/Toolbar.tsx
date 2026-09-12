@@ -11,11 +11,10 @@ import {
   Type,
   Undo2,
 } from "lucide-react"
-import { useCanUndoRedo } from "./store"
-import { cn } from "@/lib/utils"
+import { useCanUndoRedo } from "./hooks.js"
+import { cn } from "./classes.js"
 import type { LucideIcon } from "lucide-react"
-import type { BoardStore } from "./store"
-import type { ToolId } from "@kritzlboard/core"
+import type { BoardStore, ToolId } from "@kritzlboard/core"
 
 const TOOLS: Array<{
   id: ToolId
@@ -46,37 +45,38 @@ export function Toolbar({
   const { canUndo, canRedo } = useCanUndoRedo(store)
 
   return (
-    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-border bg-white p-1 shadow-lg">
+    <div className="kb-toolbar kb-panel">
       <button
-        className="flex size-9 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent"
+        type="button"
+        className="kb-icon-button kb-tool-button"
         title="Undo (Ctrl+Z)"
         disabled={!canUndo}
         onClick={() => store.undo()}
       >
-        <Undo2 className="size-4.5" />
+        <Undo2 className="kb-tool-icon" />
       </button>
       <button
-        className="flex size-9 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent"
+        type="button"
+        className="kb-icon-button kb-tool-button"
         title="Redo (Ctrl+Shift+Z)"
         disabled={!canRedo}
         onClick={() => store.redo()}
       >
-        <Redo2 className="size-4.5" />
+        <Redo2 className="kb-tool-icon" />
       </button>
-      <div className="mx-1 h-6 w-px bg-border" />
+      <div className="kb-divider" />
       {TOOLS.map(({ id, icon: Icon, label, kbd }) => (
         <button
+          type="button"
           key={id}
           className={cn(
-            "flex size-9 items-center justify-center rounded-lg",
-            tool === id
-              ? "bg-blue-600 text-white"
-              : "text-neutral-700 hover:bg-neutral-100"
+            "kb-icon-button kb-tool-button",
+            tool === id ? "kb-tool-active" : "kb-tool-idle"
           )}
           title={`${label} (${kbd})`}
           onClick={() => onToolChange(id)}
         >
-          <Icon className="size-4.5" />
+          <Icon className="kb-tool-icon" />
         </button>
       ))}
     </div>

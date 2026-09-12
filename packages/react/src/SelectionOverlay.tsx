@@ -1,4 +1,4 @@
-import { usePeers } from "./store"
+import type { PeerState, Box, Camera, Shape } from "@kritzlboard/core"
 import {
   HANDLE_CURSORS,
   HANDLE_IDS,
@@ -6,27 +6,24 @@ import {
   getHandlePosition,
   getShapeBounds,
 } from "@kritzlboard/core"
-import type { BoardStore } from "./store"
-import type { Box, Camera, Shape } from "@kritzlboard/core"
 
 const SELECT_COLOR = "#3667e8"
 
 export function SelectionOverlay({
-  store,
+  peers,
   shapes,
   selectedShapes,
   camera,
   brushBox,
   hideHandles,
 }: {
-  store: BoardStore
+  peers: Array<PeerState>
   shapes: Array<Shape>
   selectedShapes: Array<Shape>
   camera: Camera
   brushBox: Box | null
   hideHandles: boolean
 }) {
-  const peers = usePeers(store)
   const z = camera.z
   const thin = 1.5 / z
   const handleSize = 9 / z

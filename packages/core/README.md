@@ -51,9 +51,9 @@ The caller owns any attached transport and must destroy it before calling
 `store.destroy()`. Destroying a store is idempotent. Do not reuse it afterward.
 
 The current application's `src/board/store.ts` extends this store with WebSocket
-sync, presence, and React subscriptions. Those integrations are deliberately
-outside this package. DOM text measurement and React rendering also remain in
-the application.
+sync, presence, and application connection subscriptions. Those integrations are
+outside this package. Reusable React subscriptions, DOM text measurement, canvas
+rendering, and editing controls live in [`@kritzlboard/react`](../react/README.md).
 
 ## Development
 

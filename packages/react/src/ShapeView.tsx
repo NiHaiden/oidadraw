@@ -1,7 +1,7 @@
+import { FONT_STYLES } from "./typography.js"
 import { memo } from "react"
 import { getStroke } from "perfect-freehand"
 import {
-  FONT_STYLES,
   PALETTE,
   PEN_SIZES,
   STROKE_WIDTHS,
@@ -78,7 +78,7 @@ function BoxLabel({
   return (
     <foreignObject x={x} y={y} width={w} height={h} pointerEvents="none">
       <div
-        className="shape-label"
+        className="kb-label"
         style={{ fontSize, color, ...FONT_STYLES[font] }}
       >
         {text}
@@ -109,7 +109,7 @@ function LineLabel({
       dominantBaseline="central"
       fill={color}
       fontSize={fontSize}
-      stroke="var(--background)"
+      stroke="var(--kb-background, #fafaf9)"
       strokeWidth={fontSize / 4}
       paintOrder="stroke"
       strokeLinejoin="round"
@@ -291,7 +291,7 @@ export const ShapeView = memo(function ShapeView({
             pointerEvents="none"
           >
             <div
-              className="shape-text-content"
+              className="kb-text"
               style={{
                 fontSize: labelFontSize,
                 color: PALETTE[shape.color].stroke,
