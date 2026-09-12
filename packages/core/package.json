@@ -1,0 +1,32 @@
+{
+  "name": "@kritzlboard/core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Kritzlboard shape model, geometry, and local Yjs document store.",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "yjs": "^13.6.20"
+  },
+  "devDependencies": {
+    "typescript": "^6",
+    "vitest": "^4"
+  }
+}

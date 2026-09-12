@@ -135,45 +135,7 @@
   }
 }
 
-/* Board canvas */
-.board-root {
+.application-board {
   position: fixed;
   inset: 0;
-  overflow: hidden;
-  touch-action: none;
-  overscroll-behavior: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.board-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.shape-text-content {
-  font-family: var(--font-sans);
-  line-height: 1.35;
-  white-space: pre-wrap;
-  word-break: break-word;
-  outline: none;
-  min-width: 1px;
-  min-height: 1em;
-}
-
-/* label rendered inside a shape (rect/ellipse), via foreignObject */
-.shape-label {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 0 8px;
-  box-sizing: border-box;
-  font-family: var(--font-sans);
-  line-height: 1.35;
-  white-space: pre-wrap;
-  word-break: break-word;
 }

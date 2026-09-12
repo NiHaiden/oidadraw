@@ -2,6 +2,25 @@ import { defineConfig, loadEnv } from "vite"
 import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import viteReact from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
+import type { Plugin } from "vite"
+
+// A tsc rebuild replaces many interdependent modules (including React context).
+// Reload once after its writes settle instead of refreshing partial generations.
+function reloadWorkspacePackages(): Plugin {
+  let pending: ReturnType<typeof setTimeout> | undefined
+  return {
+    name: "reload-workspace-packages",
+    handleHotUpdate({ file, server }) {
+      if (!/\/packages\/(core|react|sync)\/dist\//.test(file)) return
+      clearTimeout(pending)
+      pending = setTimeout(() => server.ws.send({ type: "full-reload" }), 100)
+      return []
+    },
+    closeBundle() {
+      clearTimeout(pending)
+    },
+  }
+}
 
 const config = defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
@@ -16,6 +35,7 @@ const config = defineConfig(({ mode }) => {
       },
     },
     plugins: [
+      reloadWorkspacePackages(),
       tanstackRouter({ target: "react", autoCodeSplitting: true }),
       viteReact(),
       tailwindcss(),

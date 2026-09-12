@@ -1,5 +1,6 @@
-import { COLOR_IDS, FONT_STYLES, PALETTE, isTextEditable } from "./types"
-import { cn } from "@/lib/utils"
+import { FONT_STYLES } from "./typography.js"
+import { COLOR_IDS, PALETTE, isTextEditable } from "@kritzlboard/core"
+import { cn } from "./classes.js"
 import type {
   FillStyle,
   FontId,
@@ -9,7 +10,7 @@ import type {
   StrokeStyle,
   TextSizeId,
   ToolId,
-} from "./types"
+} from "@kritzlboard/core"
 
 const SHAPE_TOOLS: Array<ToolId> = [
   "draw",
@@ -95,21 +96,18 @@ export function StylePanel({
     selectedShapes.some((s) => s.type !== "text")
 
   return (
-    <div className="absolute top-16 right-3 flex w-40 flex-col gap-3 rounded-xl border border-border bg-white p-3 shadow-lg">
+    <div className="kb-style-panel kb-panel">
       <div>
-        <div className="mb-1.5 text-[11px] font-medium text-neutral-500">
-          Color
-        </div>
-        <div className="grid grid-cols-5 gap-1.5">
+        <div className="kb-field-label">Color</div>
+        <div className="kb-color-grid">
           {COLOR_IDS.map((id) => (
             <button
+              type="button"
               key={id}
               title={id}
               className={cn(
-                "size-6 rounded-md border-2",
-                style.color === id
-                  ? "border-blue-600"
-                  : "border-transparent hover:border-neutral-300"
+                "kb-color-button",
+                style.color === id ? "kb-color-active" : "kb-color-idle"
               )}
               style={{ backgroundColor: PALETTE[id].stroke }}
               onClick={() => onChange({ color: id })}
@@ -120,18 +118,15 @@ export function StylePanel({
 
       {showFill && (
         <div>
-          <div className="mb-1.5 text-[11px] font-medium text-neutral-500">
-            Fill
-          </div>
-          <div className="flex gap-1">
+          <div className="kb-field-label">Fill</div>
+          <div className="kb-options">
             {FILLS.map(({ id, label }) => (
               <button
+                type="button"
                 key={id}
                 className={cn(
-                  "flex-1 rounded-md border px-1 py-1 text-[11px]",
-                  style.fill === id
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-border text-neutral-600 hover:bg-neutral-50"
+                  "kb-option kb-option-text",
+                  style.fill === id ? "kb-option-active" : "kb-option-idle"
                 )}
                 onClick={() => onChange({ fill: id })}
               >
@@ -144,18 +139,17 @@ export function StylePanel({
 
       {showStrokeStyle && (
         <div>
-          <div className="mb-1.5 text-[11px] font-medium text-neutral-500">
-            Stroke
-          </div>
-          <div className="flex gap-1">
+          <div className="kb-field-label">Stroke</div>
+          <div className="kb-options">
             {STROKE_STYLES.map(({ id, label }) => (
               <button
+                type="button"
                 key={id}
                 className={cn(
-                  "flex-1 rounded-md border px-1 py-1 text-[11px]",
+                  "kb-option kb-option-text",
                   style.strokeStyle === id
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-border text-neutral-600 hover:bg-neutral-50"
+                    ? "kb-option-active"
+                    : "kb-option-idle"
                 )}
                 onClick={() => onChange({ strokeStyle: id })}
               >
@@ -168,24 +162,21 @@ export function StylePanel({
 
       {showSize && (
         <div>
-          <div className="mb-1.5 text-[11px] font-medium text-neutral-500">
-            Size
-          </div>
-          <div className="flex gap-1">
+          <div className="kb-field-label">Size</div>
+          <div className="kb-options">
             {SIZES.map(({ id, label, dot }) => (
               <button
+                type="button"
                 key={id}
                 title={label}
                 className={cn(
-                  "flex h-8 flex-1 items-center justify-center rounded-md border",
-                  style.size === id
-                    ? "border-blue-600 bg-blue-50"
-                    : "border-border hover:bg-neutral-50"
+                  "kb-option kb-option-size",
+                  style.size === id ? "kb-option-active" : "kb-option-idle"
                 )}
                 onClick={() => onChange({ size: id })}
               >
                 <span
-                  className="rounded-full bg-neutral-700"
+                  className="kb-size-dot"
                   style={{ width: dot, height: dot }}
                 />
               </button>
@@ -196,20 +187,17 @@ export function StylePanel({
 
       {showFont && (
         <div>
-          <div className="mb-1.5 text-[11px] font-medium text-neutral-500">
-            Text size
-          </div>
-          <div className="flex gap-1">
+          <div className="kb-field-label">Text size</div>
+          <div className="kb-options">
             {TEXT_SIZES.map(({ id, label, px }) => (
               <button
+                type="button"
                 key={id}
                 title={label}
                 aria-label={label}
                 className={cn(
-                  "flex h-8 flex-1 items-center justify-center rounded-md border leading-none",
-                  style.textSize === id
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-border text-neutral-600 hover:bg-neutral-50"
+                  "kb-option kb-option-size",
+                  style.textSize === id ? "kb-option-active" : "kb-option-idle"
                 )}
                 onClick={() => onChange({ textSize: id })}
               >
@@ -222,19 +210,16 @@ export function StylePanel({
 
       {showFont && (
         <div>
-          <div className="mb-1.5 text-[11px] font-medium text-neutral-500">
-            Font
-          </div>
-          <div className="flex gap-1">
+          <div className="kb-field-label">Font</div>
+          <div className="kb-options">
             {FONTS.map(({ id, label }) => (
               <button
+                type="button"
                 key={id}
                 title={label}
                 className={cn(
-                  "flex h-9 flex-1 items-center justify-center rounded-md border text-lg leading-none",
-                  style.font === id
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-border text-neutral-600 hover:bg-neutral-50"
+                  "kb-option kb-option-font",
+                  style.font === id ? "kb-option-active" : "kb-option-idle"
                 )}
                 style={FONT_STYLES[id]}
                 onClick={() => onChange({ font: id })}

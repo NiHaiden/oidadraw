@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { shapeFontSize } from "./types"
-import type { EllipseShape, LineShape, RectShape, TextShape } from "./types"
+import { shapeFontSize } from "./types.js"
+import type { EllipseShape, LineShape, RectShape, TextShape } from "./types.js"
 
 const base = { id: "1", order: 1, color: "black" as const, size: "m" as const }
 const rect: RectShape = {

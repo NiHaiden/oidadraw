@@ -15,8 +15,8 @@ import {
   resizeBox,
   resizeShape,
   snapAngle,
-} from "./geometry"
-import type { DrawShape, LineShape, RectShape } from "./types"
+} from "./geometry.js"
+import type { DrawShape, LineShape, RectShape } from "./types.js"
 
 const rect: RectShape = {
   id: "r1",

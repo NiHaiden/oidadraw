@@ -1,8 +1,12 @@
+import { FONT_STYLES } from "./typography.js"
 import { useEffect, useRef } from "react"
-import { worldToScreen } from "./geometry"
-import { FONT_STYLES, PALETTE, shapeFont, shapeFontSize } from "./types"
-import type { BoardStore } from "./store"
-import type { Camera, TextEditableShape } from "./types"
+import {
+  worldToScreen,
+  PALETTE,
+  shapeFont,
+  shapeFontSize,
+} from "@kritzlboard/core"
+import type { BoardStore, Camera, TextEditableShape } from "@kritzlboard/core"
 
 /**
  * HTML overlay for editing text in place — either a standalone text shape or
@@ -32,17 +36,18 @@ export function TextEditor({
     // defer focus one frame: when the editor mounts from a pointerdown, the
     // browser's default focus handling runs after the event and would
     // immediately blur (and thus delete) the empty editor
-    const raf = requestAnimationFrame(() => {
+    const view = el.ownerDocument.defaultView!
+    const raf = view.requestAnimationFrame(() => {
       el.focus()
       // place caret at the end
-      const range = document.createRange()
+      const range = el.ownerDocument.createRange()
       range.selectNodeContents(el)
       range.collapse(false)
-      const sel = window.getSelection()
+      const sel = el.ownerDocument.getSelection()
       sel?.removeAllRanges()
       sel?.addRange(range)
     })
-    return () => cancelAnimationFrame(raf)
+    return () => view.cancelAnimationFrame(raf)
   }, [])
 
   // write the current text into the store; rect/ellipse labels also grow the
@@ -93,7 +98,7 @@ export function TextEditor({
     ref,
     contentEditable: "plaintext-only" as const,
     suppressContentEditableWarning: true,
-    className: "shape-text-content",
+    className: "kb-text",
     onInput: commit,
     onBlur: finish,
     onKeyDown: (e: React.KeyboardEvent) => {
@@ -110,7 +115,7 @@ export function TextEditor({
     const screen = worldToScreen({ x: shape.x, y: shape.y }, camera)
     return (
       <div
-        className="absolute"
+        className="kb-absolute"
         style={{
           left: screen.x,
           top: screen.y,
@@ -137,7 +142,7 @@ export function TextEditor({
     const screen = worldToScreen({ x: shape.x, y: shape.y }, camera)
     return (
       <div
-        className="absolute flex items-center justify-center"
+        className="kb-text-box-editor"
         style={{
           left: screen.x,
           top: screen.y,
@@ -170,7 +175,7 @@ export function TextEditor({
   return (
     <div
       {...editorProps}
-      className="shape-text-content absolute"
+      className="kb-text kb-absolute"
       style={{
         left: mid.x,
         top: mid.y,

@@ -4,7 +4,7 @@ import type {
   Camera,
   LineShape,
   Shape,
-} from "./types"
+} from "./types.js"
 
 export interface Box {
   x: number

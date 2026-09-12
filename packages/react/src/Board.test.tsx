@@ -2,35 +2,14 @@
 
 import { act, cleanup, fireEvent, render } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { Board } from "./Board"
-import { BoardStore } from "./store"
-import type { EllipseShape, LineShape, RectShape, Shape } from "./types"
-
-// Keep the real Yjs store and subscriptions without opening a sync connection.
-vi.mock("y-websocket", async () => {
-  const { Awareness } = await import("y-protocols/awareness")
-  return {
-    WebsocketProvider: class {
-      awareness: InstanceType<typeof Awareness>
-      constructor(
-        _url: string,
-        _room: string,
-        doc: ConstructorParameters<typeof Awareness>[0]
-      ) {
-        this.awareness = new Awareness(doc)
-      }
-      on() {}
-      destroy() {
-        this.awareness.destroy()
-      }
-    },
-  }
-})
-
-vi.mock("./TopBar", () => ({ TopBar: () => null }))
-vi.mock("./Toolbar", () => ({ Toolbar: () => null }))
-vi.mock("./StylePanel", () => ({ StylePanel: () => null }))
-vi.mock("./ZoomBar", () => ({ ZoomBar: () => null }))
+import { Board } from "./Board.js"
+import { BoardStore } from "@kritzlboard/core"
+import type {
+  EllipseShape,
+  LineShape,
+  RectShape,
+  Shape,
+} from "@kritzlboard/core"
 
 const source: RectShape = {
   id: "source",
@@ -72,6 +51,9 @@ let store: BoardStore
 beforeEach(() => {
   // Node's optional localStorage can mask jsdom's storage in newer runtimes.
   vi.stubGlobal("localStorage", { getItem: () => null, setItem: vi.fn() })
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, window.innerWidth, window.innerHeight)
+  )
   store = new BoardStore("interaction-test")
 })
 
@@ -85,8 +67,10 @@ afterEach(() => {
 
 function mountBoard(shapes: Array<Shape>) {
   store.putShapes(shapes)
-  const view = render(<Board store={store} />)
-  const canvas = view.container.querySelector<SVGSVGElement>(".board-canvas")!
+  const view = render(<Board store={store} controls={false} />)
+  const canvas = view.container.querySelector<SVGSVGElement>(".kb-canvas")!
+  const root = view.container.querySelector<HTMLElement>(".kb-root")!
+  root.focus()
   let zoom = 1
   vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, window.innerWidth, window.innerHeight)
@@ -154,6 +138,7 @@ function mountBoard(shapes: Array<Shape>) {
   return {
     ...view,
     canvas,
+    root,
     pointer,
     select,
     endpoint,
@@ -178,7 +163,7 @@ describe("connector interaction", () => {
       board.endpoint("end")
       expect(board.container.querySelector("[contenteditable]")).toBeNull()
 
-      fireEvent.keyDown(window, { key: "Enter" })
+      fireEvent.keyDown(board.root, { key: "Enter" })
       expect(board.container.querySelector("[contenteditable]")).not.toBeNull()
       expect(board.container.querySelector("[data-line-handle]")).toBeNull()
     }
@@ -188,7 +173,7 @@ describe("connector interaction", () => {
     "attaches a new connector using its release position (%s shortcut)",
     (key) => {
       const board = mountBoard([source, target])
-      fireEvent.keyDown(window, { key })
+      fireEvent.keyDown(board.root, { key })
       board.pointer("down", board.canvas, -150, 0)
       board.pointer("move", board.canvas, 20, 0)
       expect(board.connector().endBinding).toBeUndefined()
@@ -294,7 +279,7 @@ describe("connector interaction", () => {
   it("can attach just outside a small on-screen node when zoomed out", () => {
     const board = mountBoard([source, target])
     board.setZoom(0.25)
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
     board.pointer("down", board.canvas, -150, 0)
     // Twenty-eight world units is only seven screen pixels from the node.
     board.pointer("move", board.canvas, 72, 0)
@@ -318,7 +303,7 @@ describe("connector interaction", () => {
   it("finds an eligible node beneath the node already attached to the opposite end", () => {
     const overlappingSource = { ...source, x: 100, order: 3 }
     const board = mountBoard([target, overlappingSource])
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
     board.pointer("down", board.canvas, 150, 0)
     board.pointer("move", board.canvas, 160, 0)
     board.pointer("up", board.canvas, 160, 0)
@@ -332,7 +317,7 @@ describe("connector interaction", () => {
     "shows connection points when hovering a node with the %s shortcut",
     (key) => {
       const board = mountBoard([ellipse])
-      fireEvent.keyDown(window, { key })
+      fireEvent.keyDown(board.root, { key })
 
       board.pointer("move", board.canvas, 205, 104)
 
@@ -353,7 +338,7 @@ describe("connector interaction", () => {
 
   it("snaps an arrow to the ellipse's south point when released nearby", () => {
     const board = mountBoard([ellipse])
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
     board.pointer("down", board.canvas, 200, 260)
     board.pointer("move", board.canvas, 205, 104)
     expect(
@@ -372,7 +357,7 @@ describe("connector interaction", () => {
 
   it("creates an outward arrow when clicking a node's south snap point without dragging", () => {
     const board = mountBoard([ellipse])
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
 
     board.pointer("down", board.canvas, 205, 104)
     board.pointer("up", board.canvas, 205, 104)
@@ -392,7 +377,7 @@ describe("connector interaction", () => {
   it("creates an outward arrow from the right edge when clicking a wide ellipse's center", () => {
     const oval: EllipseShape = { ...ellipse, y: -80, w: 320, h: 160 }
     const board = mountBoard([oval])
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
 
     board.pointer("down", board.canvas, 260, 0)
     board.pointer("up", board.canvas, 260, 0)
@@ -410,7 +395,7 @@ describe("connector interaction", () => {
 
   it("still creates a horizontal arrow when clicking empty canvas without dragging", () => {
     const board = mountBoard([ellipse])
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
 
     board.pointer("down", board.canvas, 400, 200)
     board.pointer("up", board.canvas, 400, 200)
@@ -436,7 +421,7 @@ describe("connector interaction", () => {
       x: edge.x + (4 * normalX) / normalLength,
       y: edge.y + (4 * normalY) / normalLength,
     }
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
     board.pointer("down", board.canvas, 500, 190)
     board.pointer("move", board.canvas, pointer.x, pointer.y)
     expect(
@@ -458,7 +443,7 @@ describe("connector interaction", () => {
   it.each([0.25, 8])("snaps near the same point at zoom %s", (zoom) => {
     const board = mountBoard([ellipse])
     board.setZoom(zoom)
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
     board.pointer("down", board.canvas, 200, 260)
     // Snap tolerance is measured on screen, independent of board zoom.
     board.pointer("move", board.canvas, 200 + 6 / zoom, 100 + 2 / zoom)
@@ -474,7 +459,7 @@ describe("connector interaction", () => {
 
   it("keeps the chosen source point fixed while aiming and reconnecting the other end", () => {
     const board = mountBoard([ellipse])
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
     board.pointer("down", board.canvas, 204, 102)
     board.pointer("move", board.canvas, -50, 240)
     expect(board.connector()).toMatchObject({
@@ -500,7 +485,7 @@ describe("connector interaction", () => {
 
   it("keeps the chosen source snap point when zoom changes during creation", () => {
     const board = mountBoard([ellipse])
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
     board.pointer("down", board.canvas, 205, 104)
     board.pointer("move", board.canvas, 400, 200)
 
@@ -518,7 +503,7 @@ describe("connector interaction", () => {
 
   it("keeps the chosen source point when a collaborator moves and resizes the node mid-drag", () => {
     const board = mountBoard([ellipse])
-    fireEvent.keyDown(window, { key: "a" })
+    fireEvent.keyDown(board.root, { key: "a" })
     board.pointer("down", board.canvas, 205, 104)
     board.pointer("move", board.canvas, -50, 200)
 
@@ -601,10 +586,10 @@ describe("connector interaction", () => {
       const board = mountBoard([source, target, attached])
       function cloneSelection() {
         if (operation === "duplicate") {
-          fireEvent.keyDown(window, { key: "d", ctrlKey: true })
+          fireEvent.keyDown(board.root, { key: "d", ctrlKey: true })
         } else {
-          fireEvent.keyDown(window, { key: "c", ctrlKey: true })
-          fireEvent.keyDown(window, { key: "v", ctrlKey: true })
+          fireEvent.keyDown(board.root, { key: "c", ctrlKey: true })
+          fireEvent.keyDown(board.root, { key: "v", ctrlKey: true })
         }
       }
 
@@ -621,8 +606,8 @@ describe("connector interaction", () => {
       expect(detachedClone.startAnchor).toBeUndefined()
       expect(detachedClone.endAnchor).toBeUndefined()
 
-      fireEvent.keyDown(window, { key: "Delete" })
-      fireEvent.keyDown(window, { key: "a", ctrlKey: true })
+      fireEvent.keyDown(board.root, { key: "Delete" })
+      fireEvent.keyDown(board.root, { key: "a", ctrlKey: true })
       cloneSelection()
       const boundClone = store
         .getShapes()
