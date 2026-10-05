@@ -14,6 +14,15 @@ importers:
       '@fontsource-variable/inter':
         specifier: ^5.2.8
         version: 5.2.8
+      '@kritzlboard/core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@kritzlboard/react':
+        specifier: workspace:*
+        version: link:packages/react
+      '@kritzlboard/sync':
+        specifier: workspace:*
+        version: link:packages/sync
       '@tailwindcss/vite':
         specifier: ^4
         version: 4.3.2(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
@@ -132,6 +141,88 @@ importers:
       vite:
         specifier: ^8
         version: 8.1.5(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)
+      vitest:
+        specifier: ^4
+        version: 4.1.10(@types/node@22.20.1)(jsdom@28.1.0(@noble/hashes@2.2.0))(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+  packages/core:
+    dependencies:
+      yjs:
+        specifier: ^13.6.20
+        version: 13.6.31
+    devDependencies:
+      typescript:
+        specifier: ^6
+        version: 6.0.3
+      vitest:
+        specifier: ^4
+        version: 4.1.10(@types/node@22.20.1)(jsdom@28.1.0(@noble/hashes@2.2.0))(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+
+  packages/react:
+    dependencies:
+      '@kritzlboard/core':
+        specifier: workspace:^
+        version: link:../core
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.24.0(react@19.2.7)
+      nanoid:
+        specifier: ^5.1.0
+        version: 5.1.16
+      perfect-freehand:
+        specifier: ^1.2.2
+        version: 1.2.3
+    devDependencies:
+      '@testing-library/react':
+        specifier: ^16.3.2
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.17)
+      concurrently:
+        specifier: ^9.1.0
+        version: 9.2.4
+      jsdom:
+        specifier: ^28
+        version: 28.1.0(@noble/hashes@2.2.0)
+      react:
+        specifier: ^19.2.6
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.6
+        version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^6
+        version: 6.0.3
+      vitest:
+        specifier: ^4
+        version: 4.1.10(@types/node@22.20.1)(jsdom@28.1.0(@noble/hashes@2.2.0))(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+  packages/sync:
+    dependencies:
+      '@kritzlboard/core':
+        specifier: workspace:^
+        version: link:../core
+      y-protocols:
+        specifier: ^1.0.6
+        version: 1.0.7(yjs@13.6.31)
+      y-websocket:
+        specifier: ^2.1.0
+        version: 2.1.0(yjs@13.6.31)
+      yjs:
+        specifier: ^13.6.20
+        version: 13.6.31
+    devDependencies:
+      lib0:
+        specifier: ^0.2.99
+        version: 0.2.117
+      typescript:
+        specifier: ^6
+        version: 6.0.3
       vitest:
         specifier: ^4
         version: 4.1.10(@types/node@22.20.1)(jsdom@28.1.0(@noble/hashes@2.2.0))(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))

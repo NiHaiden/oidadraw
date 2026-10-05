@@ -1,4 +1,4 @@
-import type { UserInfo } from "@/board/types"
+import type { UserInfo } from "@kritzlboard/core"
 
 const USER_KEY = "kritzlboard:user"
 

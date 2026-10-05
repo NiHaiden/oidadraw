@@ -1,0 +1,36 @@
+{
+  "name": "@kritzlboard/sync",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Optional Yjs WebSocket synchronization and peer presence for Kritzlboard.",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "@kritzlboard/core": "workspace:^",
+    "y-protocols": "^1.0.6",
+    "y-websocket": "^2.1.0",
+    "yjs": "^13.6.20"
+  },
+  "devDependencies": {
+    "typescript": "^6",
+    "vitest": "^4",
+    "lib0": "^0.2.99"
+  }
+}
